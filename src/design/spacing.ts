@@ -46,56 +46,40 @@ export const radius = {
   full: 9999,
 } as const;
 
-// Shadows for iOS
+// Shadows - cross-platform (iOS native + web boxShadow)
 export const shadowsIOS = {
   none: {
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
+    // Web
+    boxShadow: 'none',
   },
   sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    // Web
+    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
   },
   md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    // Web
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)',
   },
   lg: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    // Web
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
   },
   xl: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
+    // Web
+    boxShadow: '0px 8px 16px rgba(0, 0, 0, 0.12)',
   },
   '2xl': {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
+    // Web
+    boxShadow: '0px 12px 24px rgba(0, 0, 0, 0.15)',
   },
   // Colored shadows for premium feel
   orange: {
-    shadowColor: '#FF8200',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    // Web
+    boxShadow: '0px 4px 12px rgba(255, 130, 0, 0.3)',
   },
   green: {
-    shadowColor: '#115740',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
+    // Web
+    boxShadow: '0px 4px 12px rgba(17, 87, 64, 0.3)',
   },
 } as const;
 
