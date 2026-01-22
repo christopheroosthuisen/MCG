@@ -13,10 +13,8 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -38,6 +36,20 @@ import {
   VideoFile,
 } from '@/types/analysis';
 import { PoseLandmarks, BodyAngles } from '@/types/golf';
+
+// Conditional imports for native-only features
+let CameraView: any = null;
+let useCameraPermissions: any = null;
+let Haptics: any = null;
+
+if (Platform.OS !== 'web') {
+  const camera = require('expo-camera');
+  CameraView = camera.CameraView;
+  useCameraPermissions = camera.useCameraPermissions;
+  Haptics = require('expo-haptics');
+}
+
+type CameraType = 'front' | 'back';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -72,10 +84,44 @@ const CAMERA_GUIDELINES: Record<CameraPosition, { title: string; tips: string[] 
 export default function LiveCameraScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const cameraRef = useRef<CameraView>(null);
+  const cameraRef = useRef<any>(null);
 
-  // Camera permissions
-  const [permission, requestPermission] = useCameraPermissions();
+  // Web fallback - camera not supported
+  if (Platform.OS === 'web') {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.webFallback}>
+          <View style={[styles.webFallbackIcon, { backgroundColor: colors.primaryMuted }]}>
+            <Ionicons name="videocam-off" size={48} color={colors.primary} />
+          </View>
+          <Text variant="h2" style={styles.webFallbackTitle}>
+            Camera Not Available
+          </Text>
+          <Text variant="bodyMedium" color={colors.textSecondary} style={styles.webFallbackText}>
+            Live camera analysis is only available on iOS and Android devices.
+            Please use the mobile app for real-time swing analysis.
+          </Text>
+          <Button
+            label="Upload a Video Instead"
+            variant="primary"
+            size="large"
+            leftIcon={<Ionicons name="cloud-upload" size={20} color="#FFF" />}
+            onPress={() => router.push('/(tabs)/analyze')}
+            style={styles.webFallbackButton}
+          />
+          <Button
+            label="Go Back"
+            variant="ghost"
+            size="medium"
+            onPress={() => router.back()}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Camera permissions (native only)
+  const [permission, requestPermission] = useCameraPermissions!();
 
   // Camera state
   const [facing, setFacing] = useState<CameraType>('back');
@@ -173,7 +219,7 @@ export default function LiveCameraScreen() {
     setCameraPosition(positions[nextIndex]);
     setConfig((prev) => ({ ...prev, cameraPosition: positions[nextIndex] }));
 
-    if (config.hapticFeedback) {
+    if (config.hapticFeedback && Haptics) {
       Haptics.selectionAsync();
     }
   }, [cameraPosition, config.hapticFeedback]);
@@ -183,7 +229,7 @@ export default function LiveCameraScreen() {
     if (!cameraRef.current) return;
 
     try {
-      if (config.hapticFeedback) {
+      if (config.hapticFeedback && Haptics) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
 
@@ -229,7 +275,7 @@ export default function LiveCameraScreen() {
     if (!cameraRef.current) return;
 
     try {
-      if (config.hapticFeedback) {
+      if (config.hapticFeedback && Haptics) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
 
@@ -253,7 +299,7 @@ export default function LiveCameraScreen() {
   // Toggle skeleton
   const toggleSkeleton = useCallback(() => {
     setConfig((prev) => ({ ...prev, showSkeleton: !prev.showSkeleton }));
-    if (config.hapticFeedback) {
+    if (config.hapticFeedback && Haptics) {
       Haptics.selectionAsync();
     }
   }, [config.hapticFeedback]);
@@ -261,7 +307,7 @@ export default function LiveCameraScreen() {
   // Toggle realtime feedback
   const toggleFeedback = useCallback(() => {
     setConfig((prev) => ({ ...prev, showRealTimeFeedback: !prev.showRealTimeFeedback }));
-    if (config.hapticFeedback) {
+    if (config.hapticFeedback && Haptics) {
       Haptics.selectionAsync();
     }
   }, [config.hapticFeedback]);
@@ -599,6 +645,35 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
+  },
+
+  // Web fallback
+  webFallback: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing[6],
+  },
+  webFallbackIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing[6],
+  },
+  webFallbackTitle: {
+    textAlign: 'center',
+    marginBottom: spacing[3],
+  },
+  webFallbackText: {
+    textAlign: 'center',
+    marginBottom: spacing[6],
+    maxWidth: 320,
+  },
+  webFallbackButton: {
+    marginBottom: spacing[3],
+    minWidth: 220,
   },
 
   // Permission screen

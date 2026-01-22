@@ -473,10 +473,7 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.3)',
     elevation: 8,
   },
 
@@ -543,10 +540,7 @@ const styles = StyleSheet.create({
     marginLeft: -8,
     borderWidth: 2,
     borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.3)',
     elevation: 4,
   },
 });
