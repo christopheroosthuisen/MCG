@@ -3,75 +3,294 @@
  * Lessons, drills, and AI coaching
  */
 
-import { ScrollView, View, StyleSheet } from 'react-native';
+import React, { useCallback } from 'react';
+import { ScrollView, View, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
-import { spacing, radius, layout } from '@/design';
-import {
-  Text,
-  Button,
-  Card,
-  GradientCard,
-  PressableCard,
-  Badge,
-  DifficultyBadge,
-  ProgressBar,
-} from '@/components/ui';
+import { spacing, radius } from '@/design';
+import { Text, Button, Card, Badge, ProgressBar } from '@/components/ui';
 
-export default function LearnScreen() {
-  const { colors, gradients } = useTheme();
-  const router = useRouter();
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-  // Featured lesson
-  const featuredLesson = {
-    id: '1',
-    title: 'The Scoring Zone Masterclass',
-    instructor: 'Joe Mayo',
-    duration: '2.5 hrs',
+// Mock data
+const CONTINUE_LEARNING = {
+  id: 'lesson-1',
+  title: 'The Scoring Zone',
+  chapter: 'Chapter 3: Distance Control',
+  instructor: 'Joe Mayo',
+  progress: 37,
+  duration: '12 min left',
+  image: null,
+};
+
+const LEARNING_PATHS = [
+  {
+    id: 'short-game',
+    title: 'Short Game Mastery',
+    lessons: 12,
+    progress: 45,
+    gradient: ['#115740', '#1a7a5a'],
+    icon: 'golf',
+  },
+  {
+    id: 'putting',
+    title: 'Putting Fundamentals',
     lessons: 8,
-    progress: 37,
-    difficulty: 'intermediate' as const,
+    progress: 20,
+    gradient: ['#3B82F6', '#60A5FA'],
+    icon: 'ellipse-outline',
+  },
+  {
+    id: 'full-swing',
+    title: 'Full Swing Mechanics',
+    lessons: 15,
+    progress: 0,
+    gradient: ['#FF8200', '#FF9A33'],
+    icon: 'flash',
+  },
+];
+
+const FEATURED_DRILLS = [
+  {
+    id: 'drill-1',
+    title: 'Gate Drill',
+    category: 'Putting',
+    duration: '15 min',
+    difficulty: 'Beginner',
+  },
+  {
+    id: 'drill-hip-rotation',
+    title: 'Hip Rotation',
+    category: 'Full Swing',
+    duration: '20 min',
+    difficulty: 'Intermediate',
+  },
+  {
+    id: 'drill-2',
+    title: 'Distance Ladder',
+    category: 'Short Game',
+    duration: '25 min',
+    difficulty: 'All Levels',
+  },
+];
+
+const DRILL_CATEGORIES = [
+  { id: 'chipping', name: 'Chipping', count: 24, color: '#115740' },
+  { id: 'putting', name: 'Putting', count: 32, color: '#3B82F6' },
+  { id: 'bunker', name: 'Bunker', count: 12, color: '#D4A574' },
+  { id: 'tempo', name: 'Tempo', count: 15, color: '#FF8200' },
+];
+
+// Learning Path Card Component
+function PathCard({
+  path,
+  index,
+  onPress,
+}: {
+  path: typeof LEARNING_PATHS[0];
+  index: number;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.96, { damping: 15, stiffness: 400 });
   };
 
-  // Learning paths
-  const learningPaths = [
-    {
-      id: 'short-game',
-      title: 'Short Game Mastery',
-      description: '12 lessons to transform your scoring',
-      progress: 45,
-      icon: 'golf',
-      color: colors.secondary,
-    },
-    {
-      id: 'putting',
-      title: 'Putting Fundamentals',
-      description: 'Read greens and sink more putts',
-      progress: 20,
-      icon: 'ellipse',
-      color: colors.info,
-    },
-    {
-      id: 'full-swing',
-      title: 'Full Swing Mechanics',
-      description: 'Build a consistent, powerful swing',
-      progress: 0,
-      icon: 'flash',
-      color: colors.primary,
-    },
-  ];
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+  };
 
-  // Drill categories
-  const drillCategories = [
-    { id: 'chipping', name: 'Chipping', count: 24, icon: 'golf-outline' },
-    { id: 'pitching', name: 'Pitching', count: 18, icon: 'resize-outline' },
-    { id: 'bunker', name: 'Bunker', count: 12, icon: 'layers-outline' },
-    { id: 'putting', name: 'Putting', count: 32, icon: 'ellipse-outline' },
-    { id: 'tempo', name: 'Tempo', count: 15, icon: 'pulse-outline' },
-    { id: 'alignment', name: 'Alignment', count: 10, icon: 'git-merge-outline' },
-  ];
+  return (
+    <Animated.View
+      entering={FadeInRight.delay(200 + index * 100).springify()}
+      style={styles.pathCardWrapper}
+    >
+      <AnimatedPressable
+        style={[styles.pathCard, animatedStyle]}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+      >
+        <LinearGradient
+          colors={path.gradient as [string, string]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.pathCardGradient}
+        >
+          <View style={styles.pathIconCircle}>
+            <Ionicons name={path.icon as any} size={24} color="#FFF" />
+          </View>
+          <Text variant="labelMedium" color="#FFF" numberOfLines={1}>
+            {path.title}
+          </Text>
+          <Text variant="caption" color="rgba(255,255,255,0.7)">
+            {path.lessons} lessons
+          </Text>
+          {path.progress > 0 && (
+            <View style={styles.pathProgress}>
+              <View style={styles.pathProgressBar}>
+                <View
+                  style={[styles.pathProgressFill, { width: `${path.progress}%` }]}
+                />
+              </View>
+              <Text variant="caption" color="rgba(255,255,255,0.7)">
+                {path.progress}%
+              </Text>
+            </View>
+          )}
+        </LinearGradient>
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
+
+// Drill Card Component
+function DrillCard({
+  drill,
+  index,
+  colors,
+  onPress,
+}: {
+  drill: typeof FEATURED_DRILLS[0];
+  index: number;
+  colors: any;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+  };
+
+  return (
+    <Animated.View entering={FadeInDown.delay(400 + index * 100).springify()}>
+      <AnimatedPressable
+        style={[
+          styles.drillCard,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          animatedStyle,
+        ]}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+      >
+        <View style={[styles.drillIcon, { backgroundColor: colors.primaryMuted }]}>
+          <Ionicons name="fitness" size={20} color={colors.primary} />
+        </View>
+        <View style={styles.drillContent}>
+          <Text variant="labelMedium" color={colors.textHeading}>
+            {drill.title}
+          </Text>
+          <View style={styles.drillMeta}>
+            <Text variant="caption" color={colors.textMuted}>
+              {drill.category}
+            </Text>
+            <View style={[styles.metricDot, { backgroundColor: colors.border }]} />
+            <Text variant="caption" color={colors.textMuted}>
+              {drill.duration}
+            </Text>
+          </View>
+        </View>
+        <View style={[styles.drillArrow, { backgroundColor: colors.backgroundSecondary }]}>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </View>
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
+
+// Category Pill Component
+function CategoryPill({
+  category,
+  index,
+  colors,
+  onPress,
+}: {
+  category: typeof DRILL_CATEGORIES[0];
+  index: number;
+  colors: any;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.95, { damping: 15, stiffness: 400 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+  };
+
+  return (
+    <Animated.View entering={FadeInRight.delay(500 + index * 75).springify()}>
+      <AnimatedPressable
+        style={[
+          styles.categoryPill,
+          { backgroundColor: `${category.color}15`, borderColor: `${category.color}30` },
+          animatedStyle,
+        ]}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+      >
+        <Text variant="labelSmall" color={category.color}>
+          {category.name}
+        </Text>
+        <Text variant="caption" color={colors.textMuted}>
+          {category.count}
+        </Text>
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
+
+export default function LearnScreen() {
+  const { colors } = useTheme();
+  const router = useRouter();
+
+  const handleContinueLearning = useCallback(() => {
+    router.push(`/learn/lesson/${CONTINUE_LEARNING.id}`);
+  }, [router]);
+
+  const handlePathPress = useCallback((pathId: string) => {
+    console.log('Path pressed:', pathId);
+  }, []);
+
+  const handleDrillPress = useCallback((drillId: string) => {
+    router.push(`/learn/drill/${drillId}`);
+  }, [router]);
+
+  const handleCategoryPress = useCallback((categoryId: string) => {
+    console.log('Category pressed:', categoryId);
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -81,155 +300,170 @@ export default function LearnScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text variant="displaySmall" color={colors.textHeading}>Learn</Text>
-          <Text variant="bodyMedium" color={colors.textSecondary}>
-            Master your game with Joe Mayo's expertise
+        <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.header}>
+          <Text variant="displaySmall" color={colors.textHeading}>
+            Learn
           </Text>
-        </View>
+          <Text variant="bodyMedium" color={colors.textSecondary}>
+            Master your game with expert coaching
+          </Text>
+        </Animated.View>
 
-        {/* AI Coach Quick Access */}
-        <Card variant="elevated" style={styles.coachCard}>
-          <View style={styles.coachHeader}>
+        {/* AI Coach Card */}
+        <Animated.View entering={FadeInDown.delay(100).springify()}>
+          <Pressable
+            style={[styles.coachCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
             <View style={[styles.coachAvatar, { backgroundColor: colors.primary }]}>
-              <Ionicons name="sparkles" size={24} color="#FFF" />
+              <Ionicons name="sparkles" size={22} color="#FFF" />
             </View>
-            <View style={styles.coachInfo}>
-              <Text variant="h4">AI Coach</Text>
+            <View style={styles.coachContent}>
+              <Text variant="labelMedium" color={colors.textHeading}>
+                AI Coach
+              </Text>
               <Text variant="caption" color={colors.textMuted}>
-                Get personalized guidance
+                Ask any golf question
               </Text>
             </View>
-            <Button
-              label="Chat"
-              variant="primary"
-              size="small"
-              rightIcon={<Ionicons name="chatbubble" size={16} color="#FFF" />}
-            />
-          </View>
-        </Card>
-
-        {/* Featured Course */}
-        <View style={styles.section}>
-          <Text variant="h2" style={styles.sectionTitle}>Continue Learning</Text>
-
-          <GradientCard style={styles.featuredCard}>
-            <View style={styles.featuredHeader}>
-              <Badge label="FEATURED COURSE" variant="neutral" size="small" />
-              <DifficultyBadge level={featuredLesson.difficulty} />
+            <View style={[styles.coachButton, { backgroundColor: colors.primaryMuted }]}>
+              <Ionicons name="chatbubble" size={18} color={colors.primary} />
             </View>
+          </Pressable>
+        </Animated.View>
 
-            <Text variant="h2" color="#FFFFFF" style={styles.featuredTitle}>
-              {featuredLesson.title}
-            </Text>
+        {/* Continue Learning */}
+        <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.section}>
+          <Text variant="h3" color={colors.textHeading} style={styles.sectionTitle}>
+            Continue Learning
+          </Text>
 
-            <View style={styles.featuredMeta}>
-              <View style={styles.metaItem}>
-                <Ionicons name="person" size={14} color="rgba(255,255,255,0.7)" />
-                <Text variant="caption" color="rgba(255,255,255,0.7)">{featuredLesson.instructor}</Text>
+          <Pressable style={styles.continueContainer} onPress={handleContinueLearning}>
+            <LinearGradient
+              colors={[colors.primary, '#FF9A33']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.continueCard}
+            >
+              <View style={styles.continueLeft}>
+                <Badge label="IN PROGRESS" variant="neutral" size="small" />
+                <Text variant="h4" color="#FFF" style={styles.continueTitle}>
+                  {CONTINUE_LEARNING.title}
+                </Text>
+                <Text variant="caption" color="rgba(255,255,255,0.8)">
+                  {CONTINUE_LEARNING.chapter}
+                </Text>
+                <View style={styles.continueProgress}>
+                  <View style={styles.continueProgressBar}>
+                    <View
+                      style={[
+                        styles.continueProgressFill,
+                        { width: `${CONTINUE_LEARNING.progress}%` },
+                      ]}
+                    />
+                  </View>
+                  <Text variant="caption" color="rgba(255,255,255,0.8)">
+                    {CONTINUE_LEARNING.duration}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.metaItem}>
-                <Ionicons name="time" size={14} color="rgba(255,255,255,0.7)" />
-                <Text variant="caption" color="rgba(255,255,255,0.7)">{featuredLesson.duration}</Text>
+              <View style={styles.continuePlay}>
+                <Ionicons name="play" size={28} color={colors.primary} />
               </View>
-              <View style={styles.metaItem}>
-                <Ionicons name="book" size={14} color="rgba(255,255,255,0.7)" />
-                <Text variant="caption" color="rgba(255,255,255,0.7)">{featuredLesson.lessons} lessons</Text>
-              </View>
-            </View>
-
-            <View style={styles.featuredProgress}>
-              <ProgressBar progress={featuredLesson.progress} variant="gradient" size="small" />
-              <Text variant="caption" color="rgba(255,255,255,0.7)" style={styles.progressText}>
-                {featuredLesson.progress}% Complete
-              </Text>
-            </View>
-
-            <Button
-              label="Continue Lesson 3"
-              variant="primary"
-              size="medium"
-              rightIcon={<Ionicons name="play" size={18} color="#FFF" />}
-            />
-          </GradientCard>
-        </View>
+            </LinearGradient>
+          </Pressable>
+        </Animated.View>
 
         {/* Learning Paths */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text variant="h2">Learning Paths</Text>
-            <Button label="View All" variant="ghost" size="small" />
-          </View>
+          <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.sectionHeader}>
+            <Text variant="h3" color={colors.textHeading}>
+              Learning Paths
+            </Text>
+            <Pressable>
+              <Text variant="labelSmall" color={colors.primary}>
+                View All
+              </Text>
+            </Pressable>
+          </Animated.View>
 
-          {learningPaths.map((path) => (
-            <PressableCard
-              key={path.id}
-              variant="elevated"
-              padding={4}
-              style={styles.pathCard}
-            >
-              <View style={[styles.pathIcon, { backgroundColor: `${path.color}15` }]}>
-                <Ionicons name={path.icon as any} size={28} color={path.color} />
-              </View>
-              <View style={styles.pathContent}>
-                <Text variant="h4">{path.title}</Text>
-                <Text variant="caption" color={colors.textMuted}>{path.description}</Text>
-                <View style={styles.pathProgress}>
-                  <ProgressBar
-                    progress={path.progress}
-                    variant={path.progress > 0 ? 'primary' : 'gradient'}
-                    size="small"
-                  />
-                  <Text variant="caption" color={colors.textMuted}>{path.progress}%</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </PressableCard>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pathsScroll}
+          >
+            {LEARNING_PATHS.map((path, index) => (
+              <PathCard
+                key={path.id}
+                path={path}
+                index={index}
+                onPress={() => handlePathPress(path.id)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Featured Drills */}
+        <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(350).springify()} style={styles.sectionHeader}>
+            <Text variant="h3" color={colors.textHeading}>
+              Featured Drills
+            </Text>
+            <Pressable>
+              <Text variant="labelSmall" color={colors.primary}>
+                See All
+              </Text>
+            </Pressable>
+          </Animated.View>
+
+          {FEATURED_DRILLS.map((drill, index) => (
+            <DrillCard
+              key={drill.id}
+              drill={drill}
+              index={index}
+              colors={colors}
+              onPress={() => handleDrillPress(drill.id)}
+            />
           ))}
         </View>
 
-        {/* Drill Library */}
+        {/* Drill Categories */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text variant="h2">Drill Library</Text>
-            <Button label="Browse All" variant="ghost" size="small" />
-          </View>
+          <Animated.View entering={FadeInDown.delay(500).springify()}>
+            <Text variant="h3" color={colors.textHeading} style={styles.sectionTitle}>
+              Browse by Category
+            </Text>
+          </Animated.View>
 
-          <View style={styles.drillsGrid}>
-            {drillCategories.map((category) => (
-              <PressableCard
+          <View style={styles.categoriesRow}>
+            {DRILL_CATEGORIES.map((category, index) => (
+              <CategoryPill
                 key={category.id}
-                variant="outlined"
-                padding={4}
-                style={styles.drillCategory}
-              >
-                <Ionicons name={category.icon as any} size={24} color={colors.primary} />
-                <Text variant="labelMedium" style={styles.drillCategoryName}>
-                  {category.name}
-                </Text>
-                <Text variant="caption" color={colors.textMuted}>
-                  {category.count} drills
-                </Text>
-              </PressableCard>
+                category={category}
+                index={index}
+                colors={colors}
+                onPress={() => handleCategoryPress(category.id)}
+              />
             ))}
           </View>
         </View>
 
-        {/* Tips Section */}
-        <Card variant="filled" style={styles.tipCard}>
-          <View style={[styles.tipIcon, { backgroundColor: colors.warningLight }]}>
-            <Ionicons name="bulb" size={24} color={colors.warning} />
-          </View>
-          <View style={styles.tipContent}>
-            <Text variant="h4">Tip of the Day</Text>
-            <Text variant="bodySmall" color={colors.textSecondary}>
+        {/* Tip of the Day */}
+        <Animated.View entering={FadeInDown.delay(600).springify()}>
+          <View style={[styles.tipCard, { backgroundColor: colors.secondaryMuted }]}>
+            <View style={styles.tipHeader}>
+              <Ionicons name="bulb" size={18} color={colors.secondary} />
+              <Text variant="labelSmall" color={colors.secondary}>
+                Tip of the Day
+              </Text>
+            </View>
+            <Text variant="bodySmall" color={colors.textSecondary} style={styles.tipText}>
               "For consistent chip shots, keep your weight on your front foot throughout the swing and let the club do the work."
             </Text>
-            <Text variant="caption" color={colors.textMuted} style={styles.tipAuthor}>
+            <Text variant="caption" color={colors.textMuted}>
               — Joe Mayo
             </Text>
           </View>
-        </Card>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -244,32 +478,40 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing[4],
-    paddingBottom: spacing[8],
+    paddingBottom: spacing[24],
   },
 
   // Header
   header: {
-    marginBottom: spacing[6],
+    marginBottom: spacing[5],
   },
 
   // Coach Card
   coachCard: {
-    marginBottom: spacing[6],
-  },
-  coachHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: spacing[4],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing[6],
   },
   coachAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[3],
   },
-  coachInfo: {
+  coachContent: {
     flex: 1,
+  },
+  coachButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // Sections
@@ -286,92 +528,160 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
 
-  // Featured Card
-  featuredCard: {
-    paddingVertical: spacing[6],
-  },
-  featuredHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: spacing[4],
-  },
-  featuredTitle: {
-    marginBottom: spacing[3],
-  },
-  featuredMeta: {
-    flexDirection: 'row',
-    gap: spacing[4],
-    marginBottom: spacing[4],
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[1],
-  },
-  featuredProgress: {
-    marginBottom: spacing[4],
-  },
-  progressText: {
-    marginTop: spacing[2],
-  },
-
-  // Path Cards
-  pathCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  pathIcon: {
-    width: 56,
-    height: 56,
+  // Continue Learning
+  continueContainer: {
     borderRadius: radius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing[4],
+    overflow: 'hidden',
   },
-  pathContent: {
+  continueCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing[4],
+  },
+  continueLeft: {
     flex: 1,
   },
-  pathProgress: {
+  continueTitle: {
+    marginTop: spacing[2],
+    marginBottom: spacing[1],
+  },
+  continueProgress: {
+    marginTop: spacing[3],
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    marginTop: spacing[2],
+  },
+  continueProgressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+  },
+  continueProgressFill: {
+    height: '100%',
+    backgroundColor: '#FFF',
+    borderRadius: 2,
+  },
+  continuePlay: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing[3],
   },
 
-  // Drills Grid
-  drillsGrid: {
+  // Learning Paths
+  pathsScroll: {
+    paddingRight: spacing[4],
+  },
+  pathCardWrapper: {
+    width: 140,
+    marginRight: spacing[3],
+  },
+  pathCard: {
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+  },
+  pathCardGradient: {
+    padding: spacing[4],
+    alignItems: 'flex-start',
+    minHeight: 160,
+  },
+  pathIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[3],
+  },
+  pathProgress: {
+    width: '100%',
+    marginTop: spacing[3],
+  },
+  pathProgressBar: {
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 2,
+    marginBottom: spacing[1],
+  },
+  pathProgressFill: {
+    height: '100%',
+    backgroundColor: '#FFF',
+    borderRadius: 2,
+  },
+
+  // Drill Cards
+  drillCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing[3],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing[3],
+  },
+  drillIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing[3],
+  },
+  drillContent: {
+    flex: 1,
+  },
+  drillMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginTop: spacing[1],
+  },
+  metricDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+  },
+  drillArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Categories
+  categoriesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing[3],
+    gap: spacing[2],
   },
-  drillCategory: {
-    width: '31%',
+  categoryPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  drillCategoryName: {
-    marginTop: spacing[2],
-    marginBottom: spacing[0.5],
+    gap: spacing[2],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderRadius: radius.full,
+    borderWidth: 1,
   },
 
   // Tip Card
   tipCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  tipIcon: {
-    width: 44,
-    height: 44,
+    padding: spacing[4],
     borderRadius: radius.lg,
+  },
+  tipHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing[4],
+    gap: spacing[2],
+    marginBottom: spacing[2],
   },
-  tipContent: {
-    flex: 1,
-  },
-  tipAuthor: {
-    marginTop: spacing[2],
-    fontStyle: 'italic',
+  tipText: {
+    marginBottom: spacing[2],
+    lineHeight: 20,
   },
 });

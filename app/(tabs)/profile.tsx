@@ -3,60 +3,218 @@
  * User profile, stats, and settings
  */
 
-import { ScrollView, View, StyleSheet } from 'react-native';
+import React, { useCallback } from 'react';
+import { ScrollView, View, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
-import { spacing, radius, layout } from '@/design';
-import {
-  Text,
-  Button,
-  Card,
-  PressableCard,
-  Badge,
-  ProgressBar,
-  ScoreRing,
-} from '@/components/ui';
+import { spacing, radius } from '@/design';
+import { Text, Button, Badge } from '@/components/ui';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Mock user data
+const USER = {
+  name: 'John Player',
+  handicap: 12.4,
+  memberSince: 'Jan 2024',
+  isPremium: true,
+  stats: {
+    totalSessions: 47,
+    totalHours: 23.5,
+    currentStreak: 7,
+  },
+  performance: {
+    fullSwing: 81,
+    shortGame: 85,
+    putting: 78,
+    overall: 82,
+  },
+};
+
+const ACHIEVEMENTS = [
+  { id: '1', name: '7 Day Streak', icon: 'flame', earned: true, color: '#FF8200' },
+  { id: '2', name: 'Short Game Pro', icon: 'golf', earned: true, color: '#115740' },
+  { id: '3', name: '100 Sessions', icon: 'trophy', earned: false, color: '#FFD700' },
+  { id: '4', name: 'Perfect Score', icon: 'star', earned: false, color: '#3B82F6' },
+];
+
+const MENU_ITEMS = [
+  { id: 'clubs', icon: 'golf-outline', label: 'My Clubs' },
+  { id: 'goals', icon: 'flag-outline', label: 'Goals', badge: '2' },
+  { id: 'history', icon: 'time-outline', label: 'Session History' },
+  { id: 'export', icon: 'download-outline', label: 'Export Data' },
+  { id: 'settings', icon: 'settings-outline', label: 'Settings' },
+  { id: 'help', icon: 'help-circle-outline', label: 'Help & Support' },
+];
+
+// Score Ring Component
+function ScoreRing({ score, label, color }: { score: number; label: string; color: string }) {
+  const { colors } = useTheme();
+
+  return (
+    <View style={styles.scoreRingContainer}>
+      <View style={[styles.scoreRingOuter, { borderColor: colors.border }]}>
+        <View style={[styles.scoreRingProgress, { borderColor: color }]} />
+        <View style={styles.scoreRingInner}>
+          <Text variant="labelMedium" color={colors.textHeading}>
+            {score}
+          </Text>
+        </View>
+      </View>
+      <Text variant="caption" color={colors.textMuted} style={styles.scoreRingLabel}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+// Achievement Card Component
+function AchievementCard({
+  achievement,
+  index,
+  colors,
+}: {
+  achievement: typeof ACHIEVEMENTS[0];
+  index: number;
+  colors: any;
+}) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.95, { damping: 15, stiffness: 400 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+  };
+
+  return (
+    <Animated.View entering={FadeInRight.delay(300 + index * 75).springify()}>
+      <AnimatedPressable
+        style={[
+          styles.achievementCard,
+          {
+            backgroundColor: achievement.earned ? `${achievement.color}15` : colors.surface,
+            borderColor: achievement.earned ? `${achievement.color}30` : colors.border,
+            opacity: achievement.earned ? 1 : 0.5,
+          },
+          animatedStyle,
+        ]}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <View
+          style={[
+            styles.achievementIcon,
+            {
+              backgroundColor: achievement.earned
+                ? `${achievement.color}20`
+                : colors.backgroundSecondary,
+            },
+          ]}
+        >
+          <Ionicons
+            name={achievement.icon as any}
+            size={24}
+            color={achievement.earned ? achievement.color : colors.textMuted}
+          />
+        </View>
+        <Text
+          variant="caption"
+          color={achievement.earned ? colors.textHeading : colors.textMuted}
+          style={styles.achievementName}
+        >
+          {achievement.name}
+        </Text>
+        {achievement.earned && (
+          <View style={[styles.achievementCheck, { backgroundColor: colors.success }]}>
+            <Ionicons name="checkmark" size={10} color="#FFF" />
+          </View>
+        )}
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
+
+// Menu Item Component
+function MenuItem({
+  item,
+  index,
+  colors,
+  onPress,
+}: {
+  item: typeof MENU_ITEMS[0];
+  index: number;
+  colors: any;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.98, { damping: 15, stiffness: 400 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 400 });
+  };
+
+  return (
+    <Animated.View entering={FadeInDown.delay(400 + index * 50).springify()}>
+      <AnimatedPressable
+        style={[
+          styles.menuItem,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+          animatedStyle,
+        ]}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+      >
+        <View style={[styles.menuIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
+          <Ionicons name={item.icon as any} size={20} color={colors.textSecondary} />
+        </View>
+        <Text variant="bodyMedium" color={colors.textHeading} style={styles.menuLabel}>
+          {item.label}
+        </Text>
+        {item.badge && (
+          <View style={[styles.menuBadge, { backgroundColor: colors.primaryMuted }]}>
+            <Text variant="caption" color={colors.primary}>
+              {item.badge}
+            </Text>
+          </View>
+        )}
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+      </AnimatedPressable>
+    </Animated.View>
+  );
+}
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
   const router = useRouter();
 
-  // Mock user data
-  const user = {
-    name: 'John Player',
-    handicap: 12.4,
-    memberSince: 'Jan 2024',
-    isPremium: true,
-    avatar: null,
-    stats: {
-      totalSessions: 47,
-      totalHours: 23.5,
-      currentStreak: 7,
-      longestStreak: 14,
-    },
-    averageScores: {
-      fullSwing: 81,
-      shortGame: 85,
-      putting: 78,
-      overall: 82,
-    },
-    achievements: [
-      { id: '1', name: '7 Day Streak', icon: 'flame', earned: true },
-      { id: '2', name: 'Short Game Pro', icon: 'golf', earned: true },
-      { id: '3', name: '100 Sessions', icon: 'trophy', earned: false },
-    ],
-  };
-
-  const menuItems = [
-    { id: 'clubs', icon: 'golf-outline', label: 'My Clubs', badge: null },
-    { id: 'goals', icon: 'flag-outline', label: 'Goals', badge: '2 active' },
-    { id: 'history', icon: 'time-outline', label: 'Session History', badge: null },
-    { id: 'export', icon: 'download-outline', label: 'Export Data', badge: null },
-    { id: 'settings', icon: 'settings-outline', label: 'Settings', badge: null },
-    { id: 'help', icon: 'help-circle-outline', label: 'Help & Support', badge: null },
-  ];
+  const handleMenuPress = useCallback((itemId: string) => {
+    console.log('Menu pressed:', itemId);
+  }, []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -66,191 +224,168 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header */}
-        <View style={styles.profileHeader}>
+        <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.profileHeader}>
           <View style={[styles.avatar, { backgroundColor: colors.secondary }]}>
-            <Text variant="displaySmall" color="#FFFFFF">
-              {user.name.split(' ').map((n) => n[0]).join('')}
+            <Text variant="displaySmall" color="#FFF">
+              {USER.name.split(' ').map((n) => n[0]).join('')}
             </Text>
           </View>
 
-          <Text variant="h1" color={colors.textHeading} style={styles.userName}>
-            {user.name}
+          <Text variant="h2" color={colors.textHeading} style={styles.userName}>
+            {USER.name}
           </Text>
 
           <View style={styles.profileMeta}>
-            <Badge
-              label={user.isPremium ? 'PRO MEMBER' : 'FREE'}
-              variant={user.isPremium ? 'primary' : 'neutral'}
-              size="small"
-            />
+            {USER.isPremium && (
+              <View style={[styles.proBadge, { backgroundColor: colors.primary }]}>
+                <Ionicons name="star" size={12} color="#FFF" />
+                <Text variant="caption" color="#FFF">
+                  PRO
+                </Text>
+              </View>
+            )}
             <Text variant="caption" color={colors.textMuted}>
-              Member since {user.memberSince}
+              Member since {USER.memberSince}
             </Text>
           </View>
+        </Animated.View>
 
-          <View style={styles.handicapContainer}>
-            <Text variant="caption" color={colors.textMuted}>Handicap Index</Text>
-            <Text variant="metricLarge" color={colors.primary}>{user.handicap}</Text>
-          </View>
-        </View>
-
-        {/* Quick Stats */}
-        <View style={styles.quickStats}>
-          <View style={styles.statItem}>
-            <Text variant="metricMedium" color={colors.textHeading}>
-              {user.stats.totalSessions}
-            </Text>
-            <Text variant="caption" color={colors.textMuted}>Sessions</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <Text variant="metricMedium" color={colors.textHeading}>
-              {user.stats.totalHours}h
-            </Text>
-            <Text variant="caption" color={colors.textMuted}>Practice</Text>
-          </View>
-          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <View style={styles.streakValue}>
-              <Ionicons name="flame" size={20} color={colors.primary} />
-              <Text variant="metricMedium" color={colors.textHeading}>
-                {user.stats.currentStreak}
+        {/* Handicap & Stats Card */}
+        <Animated.View entering={FadeInDown.delay(100).springify()}>
+          <LinearGradient
+            colors={[colors.primary, '#FF9A33']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.statsCard}
+          >
+            <View style={styles.handicapSection}>
+              <Text variant="caption" color="rgba(255,255,255,0.8)">
+                Handicap Index
+              </Text>
+              <Text variant="metricLarge" color="#FFF">
+                {USER.handicap}
               </Text>
             </View>
-            <Text variant="caption" color={colors.textMuted}>Day Streak</Text>
-          </View>
-        </View>
-
-        {/* Performance Overview */}
-        <View style={styles.section}>
-          <Text variant="h2" style={styles.sectionTitle}>Performance</Text>
-
-          <Card variant="elevated" style={styles.performanceCard}>
-            <View style={styles.scoresGrid}>
-              <View style={styles.scoreItem}>
-                <ScoreRing score={user.averageScores.fullSwing} size={70} />
-                <Text variant="caption" color={colors.textMuted} style={styles.scoreLabel}>
-                  Full Swing
+            <View style={styles.statsDivider} />
+            <View style={styles.quickStats}>
+              <View style={styles.quickStatItem}>
+                <Text variant="labelMedium" color="#FFF">
+                  {USER.stats.totalSessions}
+                </Text>
+                <Text variant="caption" color="rgba(255,255,255,0.8)">
+                  Sessions
                 </Text>
               </View>
-              <View style={styles.scoreItem}>
-                <ScoreRing score={user.averageScores.shortGame} size={70} />
-                <Text variant="caption" color={colors.textMuted} style={styles.scoreLabel}>
-                  Short Game
+              <View style={styles.quickStatItem}>
+                <Text variant="labelMedium" color="#FFF">
+                  {USER.stats.totalHours}h
+                </Text>
+                <Text variant="caption" color="rgba(255,255,255,0.8)">
+                  Practice
                 </Text>
               </View>
-              <View style={styles.scoreItem}>
-                <ScoreRing score={user.averageScores.putting} size={70} />
-                <Text variant="caption" color={colors.textMuted} style={styles.scoreLabel}>
-                  Putting
-                </Text>
-              </View>
-              <View style={styles.scoreItem}>
-                <ScoreRing score={user.averageScores.overall} size={70} />
-                <Text variant="caption" color={colors.textMuted} style={styles.scoreLabel}>
-                  Overall
+              <View style={styles.quickStatItem}>
+                <View style={styles.streakRow}>
+                  <Ionicons name="flame" size={16} color="#FFF" />
+                  <Text variant="labelMedium" color="#FFF">
+                    {USER.stats.currentStreak}
+                  </Text>
+                </View>
+                <Text variant="caption" color="rgba(255,255,255,0.8)">
+                  Streak
                 </Text>
               </View>
             </View>
+          </LinearGradient>
+        </Animated.View>
 
-            <Button
-              label="View Detailed Stats"
-              variant="outline"
-              size="medium"
-              fullWidth
-            />
-          </Card>
+        {/* Performance Section */}
+        <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.sectionHeader}>
+            <Text variant="h3" color={colors.textHeading}>
+              Performance
+            </Text>
+            <Pressable>
+              <Text variant="labelSmall" color={colors.primary}>
+                Details
+              </Text>
+            </Pressable>
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.performanceCard}>
+            <View style={styles.scoresRow}>
+              <ScoreRing score={USER.performance.fullSwing} label="Full Swing" color={colors.primary} />
+              <ScoreRing score={USER.performance.shortGame} label="Short Game" color={colors.secondary} />
+              <ScoreRing score={USER.performance.putting} label="Putting" color={colors.info} />
+              <ScoreRing score={USER.performance.overall} label="Overall" color={colors.success} />
+            </View>
+          </Animated.View>
         </View>
 
-        {/* Achievements */}
+        {/* Achievements Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text variant="h2">Achievements</Text>
-            <Button label="View All" variant="ghost" size="small" />
-          </View>
+          <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.sectionHeader}>
+            <Text variant="h3" color={colors.textHeading}>
+              Achievements
+            </Text>
+            <Pressable>
+              <Text variant="labelSmall" color={colors.primary}>
+                View All
+              </Text>
+            </Pressable>
+          </Animated.View>
 
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.achievementsScroll}
           >
-            {user.achievements.map((achievement) => (
-              <Card
+            {ACHIEVEMENTS.map((achievement, index) => (
+              <AchievementCard
                 key={achievement.id}
-                variant={achievement.earned ? 'elevated' : 'outlined'}
-                padding={4}
-                style={[
-                  styles.achievementCard,
-                  !achievement.earned && { opacity: 0.5 },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.achievementIcon,
-                    {
-                      backgroundColor: achievement.earned
-                        ? colors.primaryMuted
-                        : colors.backgroundTertiary,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={achievement.icon as any}
-                    size={28}
-                    color={achievement.earned ? colors.primary : colors.textMuted}
-                  />
-                </View>
-                <Text
-                  variant="labelSmall"
-                  color={achievement.earned ? colors.textHeading : colors.textMuted}
-                  align="center"
-                >
-                  {achievement.name}
-                </Text>
-                {achievement.earned && (
-                  <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                )}
-              </Card>
+                achievement={achievement}
+                index={index}
+                colors={colors}
+              />
             ))}
           </ScrollView>
         </View>
 
-        {/* Menu Items */}
+        {/* Menu Section */}
         <View style={styles.section}>
-          {menuItems.map((item, index) => (
-            <PressableCard
+          <Animated.View entering={FadeInDown.delay(350).springify()}>
+            <Text variant="h3" color={colors.textHeading} style={styles.sectionTitle}>
+              Settings
+            </Text>
+          </Animated.View>
+
+          {MENU_ITEMS.map((item, index) => (
+            <MenuItem
               key={item.id}
-              variant="elevated"
-              padding={4}
-              style={[
-                styles.menuItem,
-                index === 0 && styles.menuItemFirst,
-                index === menuItems.length - 1 && styles.menuItemLast,
-              ]}
-            >
-              <Ionicons name={item.icon as any} size={22} color={colors.text} />
-              <Text variant="bodyMedium" style={styles.menuLabel}>{item.label}</Text>
-              {item.badge && (
-                <Badge label={item.badge} variant="neutral" size="small" />
-              )}
-              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-            </PressableCard>
+              item={item}
+              index={index}
+              colors={colors}
+              onPress={() => handleMenuPress(item.id)}
+            />
           ))}
         </View>
 
         {/* Sign Out */}
-        <Button
-          label="Sign Out"
-          variant="ghost"
-          size="medium"
-          fullWidth
-          style={styles.signOutButton}
-        />
+        <Animated.View entering={FadeInDown.delay(600).springify()}>
+          <Pressable style={[styles.signOutButton, { borderColor: colors.border }]}>
+            <Ionicons name="log-out-outline" size={20} color={colors.error} />
+            <Text variant="labelMedium" color={colors.error}>
+              Sign Out
+            </Text>
+          </Pressable>
+        </Animated.View>
 
         {/* Version */}
-        <Text variant="caption" color={colors.textMuted} align="center" style={styles.version}>
-          MCG Golf v1.0.0
-        </Text>
+        <Animated.View entering={FadeInDown.delay(650).springify()}>
+          <Text variant="caption" color={colors.textMuted} style={styles.version}>
+            MCG Golf v1.0.0
+          </Text>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -265,21 +400,21 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing[4],
-    paddingBottom: spacing[8],
+    paddingBottom: spacing[24],
   },
 
   // Profile Header
   profileHeader: {
     alignItems: 'center',
-    marginBottom: spacing[6],
+    marginBottom: spacing[5],
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing[4],
+    marginBottom: spacing[3],
   },
   userName: {
     marginBottom: spacing[2],
@@ -287,29 +422,40 @@ const styles = StyleSheet.create({
   profileMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[3],
-    marginBottom: spacing[4],
+    gap: spacing[2],
   },
-  handicapContainer: {
+  proBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing[1],
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderRadius: radius.full,
   },
 
-  // Quick Stats
+  // Stats Card
+  statsCard: {
+    borderRadius: radius.xl,
+    padding: spacing[4],
+    marginBottom: spacing[6],
+  },
+  handicapSection: {
+    alignItems: 'center',
+    marginBottom: spacing[4],
+  },
+  statsDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    marginBottom: spacing[4],
+  },
   quickStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: spacing[4],
-    marginBottom: spacing[6],
   },
-  statItem: {
+  quickStatItem: {
     alignItems: 'center',
   },
-  statDivider: {
-    width: 1,
-    height: 40,
-  },
-  streakValue: {
+  streakRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],
@@ -329,21 +475,43 @@ const styles = StyleSheet.create({
     marginBottom: spacing[4],
   },
 
-  // Performance Card
+  // Performance
   performanceCard: {
-    alignItems: 'center',
+    paddingVertical: spacing[2],
   },
-  scoresGrid: {
+  scoresRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: spacing[4],
+    justifyContent: 'space-between',
   },
-  scoreItem: {
+  scoreRingContainer: {
     alignItems: 'center',
+    flex: 1,
   },
-  scoreLabel: {
+  scoreRingOuter: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  scoreRingProgress: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 4,
+    borderTopColor: 'transparent',
+    transform: [{ rotate: '-45deg' }],
+  },
+  scoreRingInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreRingLabel: {
     marginTop: spacing[2],
+    textAlign: 'center',
   },
 
   // Achievements
@@ -352,14 +520,30 @@ const styles = StyleSheet.create({
   },
   achievementCard: {
     alignItems: 'center',
+    padding: spacing[3],
+    borderRadius: radius.lg,
+    borderWidth: 1,
     marginRight: spacing[3],
-    minWidth: 100,
-    gap: spacing[2],
+    minWidth: 90,
   },
   achievementIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.full,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[2],
+  },
+  achievementName: {
+    textAlign: 'center',
+  },
+  achievementCheck: {
+    position: 'absolute',
+    top: spacing[2],
+    right: spacing[2],
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -368,29 +552,43 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[3],
+    padding: spacing[3],
+    borderRadius: radius.lg,
+    borderWidth: 1,
     marginBottom: spacing[2],
   },
-  menuItemFirst: {
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-  },
-  menuItemLast: {
-    borderBottomLeftRadius: radius.xl,
-    borderBottomRightRadius: radius.xl,
-    marginBottom: 0,
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing[3],
   },
   menuLabel: {
     flex: 1,
   },
+  menuBadge: {
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    marginRight: spacing[2],
+  },
 
   // Sign Out
   signOutButton: {
-    marginTop: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    padding: spacing[4],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing[4],
   },
 
   // Version
   version: {
-    marginTop: spacing[4],
+    textAlign: 'center',
   },
 });
