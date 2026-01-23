@@ -1,30 +1,55 @@
 /**
  * MCG Golf App - Home Screen
- * Dashboard with personalized content and quick actions
+ * Dashboard with personalized content, quick actions, and recent activity
  */
 
-import { ScrollView, View, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ScrollView, View, StyleSheet, Pressable, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  interpolate,
+} from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
-import { spacing, radius, layout } from '@/design';
+import { spacing, radius } from '@/design';
 import {
   Text,
-  Heading,
   Button,
   Card,
   GradientCard,
   PressableCard,
   Badge,
   ProgressBar,
-  MetricValue,
 } from '@/components/ui';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Get time-based greeting
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
+// Mock data for recent swings
+const RECENT_SWINGS = [
+  { id: '1', date: 'Today', club: 'Driver', score: 85, issue: 'Over-rotation' },
+  { id: '2', date: 'Yesterday', club: '7 Iron', score: 78, issue: 'Early extension' },
+  { id: '3', date: '2 days ago', club: 'Wedge', score: 92, issue: null },
+];
 
 export default function HomeScreen() {
   const { colors, gradients } = useTheme();
   const router = useRouter();
+  const [greeting] = useState(getGreeting());
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -33,184 +58,203 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Greeting Section */}
-        <View style={styles.greetingSection}>
+        {/* Header with Greeting */}
+        <Animated.View
+          entering={FadeInDown.delay(100).springify()}
+          style={styles.header}
+        >
           <View style={styles.greetingContent}>
-            <Text variant="h1" color={colors.textHeading}>
-              Good morning, <Text color={colors.primary}>Player</Text>
+            <Text variant="bodyMedium" color={colors.textMuted}>
+              {greeting}
             </Text>
-            <Text variant="bodyMedium" color={colors.textSecondary}>
-              Ready to elevate your short game?
+            <Text variant="displaySmall" color={colors.textHeading}>
+              Welcome back
             </Text>
           </View>
 
-          <View style={[styles.streakBadge, { backgroundColor: colors.primaryMuted }]}>
-            <Ionicons name="flame" size={24} color={colors.primary} />
+          <Pressable
+            style={[styles.streakBadge, { backgroundColor: colors.primaryMuted }]}
+            onPress={() => router.push('/profile')}
+          >
+            <Ionicons name="flame" size={22} color={colors.primary} />
             <View>
-              <Text variant="metricSmall" color={colors.primary}>7</Text>
+              <Text variant="labelLarge" color={colors.primary}>7</Text>
               <Text variant="caption" color={colors.textMuted}>Day Streak</Text>
             </View>
-          </View>
-        </View>
+          </Pressable>
+        </Animated.View>
 
-        {/* Primary Action Card */}
-        <GradientCard style={styles.primaryCard}>
-          <View style={styles.cardBadge}>
-            <Badge label="CONTINUE LEARNING" variant="neutral" size="small" />
-          </View>
+        {/* Primary CTA - Continue Learning */}
+        <Animated.View entering={FadeInDown.delay(200).springify()}>
+          <GradientCard style={styles.primaryCard}>
+            <View style={styles.cardBadge}>
+              <Badge label="CONTINUE LEARNING" variant="neutral" size="small" />
+            </View>
 
-          <Text variant="h2" color="#FFFFFF" style={styles.cardTitle}>
-            Mastering the 50-Yard Pitch
-          </Text>
-          <Text variant="bodyMedium" color="rgba(255,255,255,0.8)" style={styles.cardSubtitle}>
-            Lesson 3 of 8 - The Scoring Zone
-          </Text>
-
-          <View style={styles.progressContainer}>
-            <ProgressBar progress={37} variant="gradient" size="small" />
-            <Text variant="caption" color="rgba(255,255,255,0.7)" style={styles.progressText}>
-              37% Complete
+            <Text variant="h2" color="#FFFFFF" style={styles.cardTitle}>
+              Mastering the 50-Yard Pitch
             </Text>
-          </View>
+            <Text variant="bodyMedium" color="rgba(255,255,255,0.8)" style={styles.cardSubtitle}>
+              Lesson 3 of 8 • The Scoring Zone
+            </Text>
 
-          <View style={styles.cardFooter}>
-            <Button
-              label="Continue"
-              variant="primary"
-              size="medium"
-              rightIcon={<Ionicons name="arrow-forward" size={18} color="#FFF" />}
-              onPress={() => router.push('/learn')}
-            />
-            <View style={styles.duration}>
-              <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.7)" />
-              <Text variant="caption" color="rgba(255,255,255,0.7)">12 min left</Text>
-            </View>
-          </View>
-        </GradientCard>
-
-        {/* Quick Stats */}
-        <View style={styles.statsGrid}>
-          <StatCard
-            icon="book-outline"
-            iconBg={colors.primaryMuted}
-            iconColor={colors.primary}
-            value="12"
-            label="Lessons Done"
-          />
-          <StatCard
-            icon="golf-outline"
-            iconBg={colors.infoLight}
-            iconColor={colors.info}
-            value="3.5"
-            label="Hours Practice"
-          />
-          <StatCard
-            icon="trending-up-outline"
-            iconBg={colors.secondaryMuted}
-            iconColor={colors.secondary}
-            value="+15%"
-            label="Improvement"
-          />
-          <StatCard
-            icon="analytics-outline"
-            iconBg={colors.errorLight}
-            iconColor={colors.error}
-            value="82"
-            label="Avg Score"
-          />
-        </View>
-
-        {/* Two Column Grid */}
-        <View style={styles.twoColumnGrid}>
-          {/* AI Coach Card */}
-          <Card variant="elevated" style={styles.gridCard}>
-            <View style={styles.cardHeader}>
-              <View style={[styles.coachAvatar, { backgroundColor: colors.primary }]}>
-                <Ionicons name="chatbubble-ellipses" size={20} color="#FFF" />
-              </View>
-              <View style={styles.cardHeaderText}>
-                <Text variant="h4">AI Coach</Text>
-                <View style={styles.onlineStatus}>
-                  <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
-                  <Text variant="caption" color={colors.success}>Online</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={[styles.coachMessage, { backgroundColor: colors.backgroundSecondary, borderLeftColor: colors.primary }]}>
-              <Text variant="bodySmall" color={colors.text}>
-                "Based on your recent sessions, let's focus on distance control with your wedges today."
+            <View style={styles.progressContainer}>
+              <ProgressBar progress={37} variant="gradient" size="small" />
+              <Text variant="caption" color="rgba(255,255,255,0.7)" style={styles.progressText}>
+                37% Complete
               </Text>
             </View>
 
-            <Button
-              label="Chat with Coach"
-              variant="outline"
-              size="small"
-              onPress={() => router.push('/learn')}
-            />
-          </Card>
-
-          {/* Recommended Drill Card */}
-          <Card variant="elevated" style={styles.gridCard}>
-            <View style={styles.cardHeader}>
-              <Ionicons name="flash" size={24} color={colors.primary} />
-              <Text variant="h4" style={{ flex: 1 }}>Today's Drill</Text>
-            </View>
-
-            <View style={styles.drillPreview}>
-              <View style={[styles.drillThumbnail, { backgroundColor: colors.secondaryMuted }]}>
-                <Ionicons name="golf" size={32} color={colors.secondary} />
-              </View>
-              <View style={styles.drillInfo}>
-                <Text variant="labelMedium">Clock Drill</Text>
-                <View style={styles.drillMeta}>
-                  <Badge label="Short Game" variant="secondary" size="small" />
-                  <Text variant="caption" color={colors.textMuted}>15 min</Text>
-                </View>
+            <View style={styles.cardFooter}>
+              <Button
+                label="Continue"
+                variant="primary"
+                size="medium"
+                rightIcon={<Ionicons name="arrow-forward" size={18} color="#FFF" />}
+                onPress={() => router.push('/learn')}
+              />
+              <View style={styles.duration}>
+                <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.7)" />
+                <Text variant="caption" color="rgba(255,255,255,0.7)">12 min left</Text>
               </View>
             </View>
+          </GradientCard>
+        </Animated.View>
 
-            <Button
-              label="Start Drill"
-              variant="secondary"
-              size="small"
-              onPress={() => router.push('/practice')}
-            />
-          </Card>
-        </View>
+        {/* Quick Stats Row */}
+        <Animated.View
+          entering={FadeInDown.delay(300).springify()}
+          style={styles.statsRow}
+        >
+          <StatCard
+            icon="videocam"
+            value="24"
+            label="Swings"
+            color={colors.primary}
+            bgColor={colors.primaryMuted}
+          />
+          <StatCard
+            icon="time"
+            value="4.2h"
+            label="Practice"
+            color={colors.info}
+            bgColor={colors.infoLight}
+          />
+          <StatCard
+            icon="trending-up"
+            value="+12%"
+            label="Improved"
+            color={colors.success}
+            bgColor={colors.successLight}
+          />
+        </Animated.View>
 
         {/* Quick Actions */}
-        <View style={styles.quickActionsSection}>
-          <Text variant="h2" style={styles.sectionTitle}>Quick Actions</Text>
-
-          <View style={styles.actionsGrid}>
-            <QuickActionCard
+        <Animated.View
+          entering={FadeInDown.delay(400).springify()}
+          style={styles.section}
+        >
+          <Text variant="h3" style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActions}>
+            <QuickAction
               icon="videocam"
               label="Record Swing"
-              onPress={() => router.push('/analyze')}
-              colors={colors}
+              subtitle="Live analysis"
+              color={colors.primary}
+              onPress={() => router.push('/analysis/live')}
             />
-            <QuickActionCard
-              icon="golf"
-              label="Practice"
-              onPress={() => router.push('/practice')}
-              colors={colors}
-            />
-            <QuickActionCard
-              icon="analytics"
-              label="My Stats"
-              onPress={() => router.push('/profile')}
-              colors={colors}
-            />
-            <QuickActionCard
-              icon="school"
-              label="Lessons"
-              onPress={() => router.push('/learn')}
-              colors={colors}
+            <QuickAction
+              icon="cloud-upload"
+              label="Upload Video"
+              subtitle="From library"
+              color={colors.secondary}
+              onPress={() => router.push('/(tabs)/analyze')}
             />
           </View>
-        </View>
+        </Animated.View>
+
+        {/* AI Coach Tip */}
+        <Animated.View entering={FadeInDown.delay(500).springify()}>
+          <Card variant="outlined" style={styles.coachCard}>
+            <View style={styles.coachHeader}>
+              <View style={[styles.coachAvatar, { backgroundColor: colors.primary }]}>
+                <Ionicons name="sparkles" size={18} color="#FFF" />
+              </View>
+              <View style={styles.coachInfo}>
+                <Text variant="labelMedium">AI Coach Insight</Text>
+                <View style={styles.onlineIndicator}>
+                  <View style={[styles.onlineDot, { backgroundColor: colors.success }]} />
+                  <Text variant="caption" color={colors.success}>Active</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </View>
+            <View style={[styles.coachMessage, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text variant="bodySmall" color={colors.textSecondary}>
+                "Based on your recent practice, focus on hip rotation through impact.
+                I've prepared a drill specifically for you."
+              </Text>
+            </View>
+            <Button
+              label="View Recommended Drill"
+              variant="ghost"
+              size="small"
+              rightIcon={<Ionicons name="arrow-forward" size={16} color={colors.primary} />}
+              onPress={() => router.push('/learn/drill/drill-hip-rotation')}
+            />
+          </Card>
+        </Animated.View>
+
+        {/* Recent Swings */}
+        <Animated.View
+          entering={FadeInDown.delay(600).springify()}
+          style={styles.section}
+        >
+          <View style={styles.sectionHeader}>
+            <Text variant="h3">Recent Swings</Text>
+            <Pressable onPress={() => router.push('/(tabs)/analyze')}>
+              <Text variant="labelMedium" color={colors.primary}>See All</Text>
+            </Pressable>
+          </View>
+
+          {RECENT_SWINGS.map((swing, index) => (
+            <Animated.View
+              key={swing.id}
+              entering={FadeInRight.delay(700 + index * 100).springify()}
+            >
+              <SwingCard
+                swing={swing}
+                colors={colors}
+                onPress={() => router.push({
+                  pathname: '/analysis/[id]',
+                  params: { id: swing.id }
+                })}
+              />
+            </Animated.View>
+          ))}
+        </Animated.View>
+
+        {/* Today's Goal */}
+        <Animated.View entering={FadeInDown.delay(900).springify()}>
+          <Card variant="filled" style={styles.goalCard}>
+            <View style={styles.goalHeader}>
+              <View style={[styles.goalIcon, { backgroundColor: colors.secondaryMuted }]}>
+                <Ionicons name="flag" size={20} color={colors.secondary} />
+              </View>
+              <View style={styles.goalInfo}>
+                <Text variant="labelMedium">Today's Goal</Text>
+                <Text variant="caption" color={colors.textMuted}>
+                  Complete 3 practice drills
+                </Text>
+              </View>
+              <Text variant="h3" color={colors.secondary}>1/3</Text>
+            </View>
+            <ProgressBar progress={33} variant="secondary" size="small" />
+          </Card>
+        </Animated.View>
+
+        {/* Bottom spacing for tab bar */}
+        <View style={{ height: spacing[4] }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -219,56 +263,131 @@ export default function HomeScreen() {
 // Stat Card Component
 function StatCard({
   icon,
-  iconBg,
-  iconColor,
   value,
   label,
+  color,
+  bgColor,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
-  iconBg: string;
-  iconColor: string;
   value: string;
   label: string;
+  color: string;
+  bgColor: string;
 }) {
   const { colors } = useTheme();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
   return (
-    <Card variant="elevated" padding={3} style={styles.statCard}>
-      <View style={[styles.statIcon, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={20} color={iconColor} />
-      </View>
-      <View style={styles.statContent}>
-        <Text variant="metricSmall" color={colors.textHeading}>{value}</Text>
-        <Text variant="caption" color={colors.textMuted}>{label}</Text>
-      </View>
-    </Card>
+    <Pressable
+      onPressIn={() => { scale.value = withSpring(0.95); }}
+      onPressOut={() => { scale.value = withSpring(1); }}
+    >
+      <Animated.View style={animatedStyle}>
+        <Card variant="elevated" padding={3} style={styles.statCard}>
+          <View style={[styles.statIcon, { backgroundColor: bgColor }]}>
+            <Ionicons name={icon} size={18} color={color} />
+          </View>
+          <Text variant="labelLarge" color={colors.textHeading}>{value}</Text>
+          <Text variant="caption" color={colors.textMuted}>{label}</Text>
+        </Card>
+      </Animated.View>
+    </Pressable>
   );
 }
 
-// Quick Action Card Component
-function QuickActionCard({
+// Quick Action Component
+function QuickAction({
   icon,
   label,
+  subtitle,
+  color,
   onPress,
-  colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  subtitle: string;
+  color: string;
   onPress: () => void;
-  colors: any;
 }) {
+  const { colors } = useTheme();
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
-    <PressableCard
-      variant="elevated"
-      padding={4}
-      style={styles.actionCard}
+    <Pressable
+      onPressIn={() => { scale.value = withSpring(0.97); }}
+      onPressOut={() => { scale.value = withSpring(1); }}
+      onPress={onPress}
+      style={styles.quickActionWrapper}
+    >
+      <Animated.View style={animatedStyle}>
+        <Card variant="elevated" padding={4} style={styles.quickActionCard}>
+          <View style={[styles.quickActionIcon, { backgroundColor: `${color}15` }]}>
+            <Ionicons name={icon} size={28} color={color} />
+          </View>
+          <Text variant="labelMedium" color={colors.textHeading}>{label}</Text>
+          <Text variant="caption" color={colors.textMuted}>{subtitle}</Text>
+        </Card>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+// Swing Card Component
+function SwingCard({
+  swing,
+  colors,
+  onPress,
+}: {
+  swing: typeof RECENT_SWINGS[0];
+  colors: any;
+  onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const getScoreColor = (score: number) => {
+    if (score >= 85) return colors.success;
+    if (score >= 70) return colors.warning;
+    return colors.error;
+  };
+
+  return (
+    <Pressable
+      onPressIn={() => { scale.value = withSpring(0.98); }}
+      onPressOut={() => { scale.value = withSpring(1); }}
       onPress={onPress}
     >
-      <View style={[styles.actionIcon, { backgroundColor: colors.backgroundSecondary }]}>
-        <Ionicons name={icon} size={28} color={colors.text} />
-      </View>
-      <Text variant="labelMedium" align="center">{label}</Text>
-    </PressableCard>
+      <Animated.View style={animatedStyle}>
+        <Card variant="outlined" style={styles.swingCard}>
+          <View style={styles.swingLeft}>
+            <View style={[styles.swingScore, { borderColor: getScoreColor(swing.score) }]}>
+              <Text variant="labelLarge" color={getScoreColor(swing.score)}>
+                {swing.score}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.swingInfo}>
+            <Text variant="labelMedium" color={colors.textHeading}>{swing.club}</Text>
+            <Text variant="caption" color={colors.textMuted}>{swing.date}</Text>
+            {swing.issue && (
+              <Badge label={swing.issue} variant="warning" size="small" />
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </Card>
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -284,8 +403,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing[8],
   },
 
-  // Greeting
-  greetingSection: {
+  // Header
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -293,12 +412,14 @@ const styles = StyleSheet.create({
   },
   greetingContent: {
     flex: 1,
+    gap: spacing[1],
   },
   streakBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    padding: spacing[3],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
     borderRadius: radius.xl,
   },
 
@@ -307,7 +428,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing[6],
   },
   cardBadge: {
-    marginBottom: spacing[3],
+    marginBottom: spacing[2],
   },
   cardTitle: {
     marginBottom: spacing[1],
@@ -332,61 +453,85 @@ const styles = StyleSheet.create({
     gap: spacing[1],
   },
 
-  // Stats Grid
-  statsGrid: {
+  // Stats Row
+  statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing[3],
     marginBottom: spacing[6],
   },
   statCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
     flex: 1,
-    minWidth: '45%',
+    alignItems: 'center',
+    gap: spacing[2],
   },
   statIcon: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statContent: {
-    flex: 1,
-  },
 
-  // Two Column Grid
-  twoColumnGrid: {
-    flexDirection: 'row',
-    gap: spacing[4],
+  // Sections
+  section: {
     marginBottom: spacing[6],
   },
-  gridCard: {
-    flex: 1,
-  },
-  cardHeader: {
+  sectionHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: spacing[3],
     marginBottom: spacing[4],
   },
-  cardHeaderText: {
+  sectionTitle: {
+    marginBottom: spacing[4],
+  },
+
+  // Quick Actions
+  quickActions: {
+    flexDirection: 'row',
+    gap: spacing[3],
+  },
+  quickActionWrapper: {
     flex: 1,
   },
-  coachAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  quickActionCard: {
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  quickActionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing[1],
   },
-  onlineStatus: {
+
+  // Coach Card
+  coachCard: {
+    marginBottom: spacing[6],
+  },
+  coachHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[3],
+  },
+  coachAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing[3],
+  },
+  coachInfo: {
+    flex: 1,
+  },
+  onlineIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],
-    marginTop: spacing[0.5],
+    marginTop: 2,
   },
   onlineDot: {
     width: 6,
@@ -396,56 +541,49 @@ const styles = StyleSheet.create({
   coachMessage: {
     padding: spacing[3],
     borderRadius: radius.lg,
-    borderLeftWidth: 3,
-    marginBottom: spacing[4],
+    marginBottom: spacing[3],
   },
 
-  // Drill Preview
-  drillPreview: {
+  // Swing Card
+  swingCard: {
     flexDirection: 'row',
-    gap: spacing[3],
+    alignItems: 'center',
+    marginBottom: spacing[3],
+  },
+  swingLeft: {
+    marginRight: spacing[3],
+  },
+  swingScore: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swingInfo: {
+    flex: 1,
+    gap: spacing[1],
+  },
+
+  // Goal Card
+  goalCard: {
     marginBottom: spacing[4],
   },
-  drillThumbnail: {
-    width: 64,
-    height: 64,
+  goalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[3],
+  },
+  goalIcon: {
+    width: 40,
+    height: 40,
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: spacing[3],
   },
-  drillInfo: {
+  goalInfo: {
     flex: 1,
-    justifyContent: 'center',
-    gap: spacing[2],
-  },
-  drillMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-
-  // Quick Actions
-  quickActionsSection: {
-    marginTop: spacing[2],
-  },
-  sectionTitle: {
-    marginBottom: spacing[4],
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[3],
-  },
-  actionCard: {
-    width: '47%',
-    alignItems: 'center',
-    gap: spacing[3],
-  },
-  actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
