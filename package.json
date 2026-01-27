@@ -1,0 +1,63 @@
+{
+  "name": "mcg-app",
+  "version": "1.0.0",
+  "description": "Mayo Coaching Golf - Premium Golf Instruction Platform",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@prisma/client": "^5.7.0",
+    "stripe": "^14.0.0",
+    "@stripe/stripe-js": "^2.2.0",
+    "next-auth": "^4.24.0",
+    "@next-auth/prisma-adapter": "^1.0.7",
+    "zod": "^3.22.0",
+    "date-fns": "^3.0.0",
+    "uuid": "^9.0.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "nodemailer": "^6.9.0",
+    "aws-sdk": "^2.1500.0",
+    "socket.io": "^4.7.0",
+    "socket.io-client": "^4.7.0",
+    "react-query": "^3.39.0",
+    "@tanstack/react-query": "^5.0.0",
+    "zustand": "^4.4.0",
+    "tailwindcss": "^3.4.0",
+    "clsx": "^2.0.0",
+    "lucide-react": "^0.300.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/bcryptjs": "^2.4.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/uuid": "^9.0.0",
+    "prisma": "^5.7.0",
+    "eslint": "^8.55.0",
+    "eslint-config-next": "^14.0.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "jest": "^29.7.0",
+    "@testing-library/react": "^14.1.0",
+    "@testing-library/jest-dom": "^6.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

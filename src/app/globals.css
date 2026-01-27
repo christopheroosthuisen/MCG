@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --mcg-primary: #1a472a;      /* Golf green */
+  --mcg-secondary: #c9a227;    /* Gold accent */
+  --mcg-dark: #0d1f15;
+  --mcg-light: #f5f5f5;
+}
+
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  background-color: var(--mcg-light);
+  color: var(--mcg-dark);
+}
+
+/* Custom utility classes for MCG branding */
+@layer utilities {
+  .text-mcg-primary {
+    color: var(--mcg-primary);
+  }
+
+  .text-mcg-secondary {
+    color: var(--mcg-secondary);
+  }
+
+  .bg-mcg-primary {
+    background-color: var(--mcg-primary);
+  }
+
+  .bg-mcg-secondary {
+    background-color: var(--mcg-secondary);
+  }
+
+  .border-mcg-primary {
+    border-color: var(--mcg-primary);
+  }
+}
