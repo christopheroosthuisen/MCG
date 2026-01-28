@@ -138,48 +138,161 @@ Credits are the in-app currency used for premium services, primarily swing revie
 - **Student Management**: View assigned students, their progress
 - **Content Tools**: Create drills, annotate videos, share resources
 
-#### Revenue Share
-- MCG Alumni: 70% of lesson/review revenue
-- Platform: 30% platform fee
-- Top performers (100+ reviews, 4.8+ rating): 75/25 split
+---
+
+## 4. Coach Monetization & Tiers
+
+### Coach Subscription Tiers
+
+| Tier | Monthly Fee | Revenue Share | Features |
+|------|-------------|---------------|----------|
+| **Starter** | Free | 60% | Basic profile, reviews, lessons |
+| **Professional** | $29 | 70% | + Unlimited products, group lessons, community content |
+| **Elite** | $79 | 80% | + Featured placement, priority support, custom branding |
+| **Master** | $199 | 85% | + Permanent featured, MCG partnership, early features |
+
+### Revenue Streams for Coaches
+
+#### 4.1 Swing Reviews
+- Standard, Priority, Detailed reviews
+- Joseph Mayo exclusive reviews (25 credits)
+- Share reviews to community (with student consent) for additional reach
+
+#### 4.2 Live Lessons
+- 30-minute and 60-minute video calls
+- Coaches set their own pricing within platform guidelines
+- Recordings provided to students
+
+#### 4.3 Group Lessons
+- Host group sessions (2-10+ participants)
+- Early bird pricing options
+- Recordings available after session
+- Scale income beyond 1-on-1 limitations
+
+#### 4.4 Community Content (Cameo-Style)
+Coaches can create and monetize content:
+
+| Content Type | Description | Monetization |
+|--------------|-------------|--------------|
+| Public Reviews | Shareable swing analysis | Tips, purchases |
+| Tip Videos | Quick coaching tips | Views, tips |
+| Drill Videos | Instructional content | Purchases, tips |
+| Q&A Responses | Community questions | Engagement |
+| Pro Analysis | Tour player breakdowns | Premium content |
+
+**Visibility Options:**
+- Public (free, ad-supported)
+- Members Only (any paid tier)
+- Tier Restricted (specific membership level)
+- Purchasers Only (credit paywall)
+
+#### 4.5 Content Marketplace
+Coaches can sell digital products:
+
+| Product Type | Examples | Typical Price |
+|--------------|----------|---------------|
+| Drill Packs | 5-10 drill collection | 10-25 credits |
+| Courses | Multi-video series | 50-200 credits |
+| eBooks | Written guides | 15-50 credits |
+| Practice Plans | Structured routines | 20-40 credits |
+| Templates | For other coaches | 30-100 credits |
+
+#### 4.6 Tipping System
+- Students can tip coaches on any content
+- Anonymous tipping option
+- Tip after lessons/reviews
+- Messages with tips
+
+#### 4.7 Chat Monetization
+
+| Member Tier | Chat Access | Cost |
+|-------------|-------------|------|
+| Free/Starter | No access | N/A |
+| Pro | 5 free messages/coach/month | Then 1 credit/msg |
+| Elite/Lifetime | Unlimited | Free |
+
+Coaches earn from credit-based messages.
+
+### Coach Referral Program
+
+#### Refer Other Coaches
+- **Earn 5% of referred coach's revenue for 12 months**
+- Unique referral code per coach
+- Real-time earnings tracking
+- Monthly payouts
+
+#### Refer Students
+- **5 bonus credits per paying student referred**
+- Immediate payout upon first purchase
+- Unlimited referrals
+
+### Certification Program
+
+| Level | Name | Requirements | Benefits |
+|-------|------|--------------|----------|
+| 1 | Foundational | Basic exam + video | MCG Certified badge |
+| 2 | Intermediate | Advanced techniques | Higher visibility |
+| 3 | Advanced | Full curriculum | Priority matching |
+| 4 | Master | Comprehensive eval | Featured status |
+| 5 | Specialist | Focus area certification | Specialty badge |
+
+- Certifications cost credits to attempt
+- Some require renewal (continuing education)
+- Displayed on coach profile
+
+### Payout System
+
+- **Minimum payout**: $10
+- **Payout methods**: Stripe Connect, PayPal
+- **Processing fee**: 0.25%
+- **Payout frequency**: On-demand (weekly available)
+
+**Earnings Breakdown Tracking:**
+- Review earnings
+- Lesson earnings
+- Group lesson earnings
+- Content/product sales
+- Tips received
+- Referral commissions
+- Chat credits
 
 ---
 
-## 4. Additional Monetization Streams
+## 5. Additional Monetization Streams
 
-### 4.1 In-Person Events
+### 5.1 In-Person Events
 - MCG Clinics & Workshops
 - Golf trips with Joseph Mayo
 - Annual MCG Summit
 
-### 4.2 Merchandise Store
+### 5.2 Merchandise Store
 - Branded apparel
 - Training aids
 - Partner equipment (affiliate revenue)
 
-### 4.3 Corporate/Group Plans
+### 5.3 Corporate/Group Plans
 - Team subscriptions for golf clubs
 - Corporate wellness programs
 - Golf academy partnerships
 
-### 4.4 Affiliate Program
+### 5.4 Affiliate Program
 - Golf equipment partnerships
 - Course booking partnerships
 - Travel & hospitality partnerships
 
-### 4.5 Premium Content
+### 5.5 Premium Content
 - Exclusive masterclass series
 - Course-specific strategy guides
 - Mental game courses
 
-### 4.6 Certification Program
+### 5.6 Events Program
 - MCG Teaching Methodology certification
 - Instructor training program
 - Continuing education credits
 
 ---
 
-## 5. Payment & Billing Architecture
+## 6. Payment & Billing Architecture
 
 ### Payment Processor
 - Primary: Stripe (subscriptions, one-time purchases)
@@ -198,7 +311,7 @@ Credits are the in-app currency used for premium services, primarily swing revie
 
 ---
 
-## 6. Technical Implementation Overview
+## 7. Technical Implementation Overview
 
 ### Database Entities
 ```
@@ -228,7 +341,7 @@ Credits are the in-app currency used for premium services, primarily swing revie
 
 ---
 
-## 7. Success Metrics
+## 8. Success Metrics
 
 ### KPIs to Track
 - Monthly Recurring Revenue (MRR)
@@ -248,7 +361,7 @@ Credits are the in-app currency used for premium services, primarily swing revie
 
 ---
 
-## 8. Launch Strategy
+## 9. Launch Strategy
 
 ### Phase 1: Foundation (Months 1-2)
 - Core membership tiers

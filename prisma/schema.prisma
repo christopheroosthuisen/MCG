@@ -233,6 +233,7 @@ model Coach {
   bio               String?      @db.Text
   profileImage      String?
   coverImage        String?
+  introVideoUrl     String?      // Coach intro video
 
   // Credentials
   certifications    String[]
@@ -249,30 +250,51 @@ model Coach {
   detailedReviewCredits  Int     @default(7)
   lesson30MinCredits     Int     @default(15)
   lesson60MinCredits     Int     @default(25)
+  chatCreditsPerMessage  Int     @default(1)
 
   // Performance
   totalReviews      Int          @default(0)
   totalLessons      Int          @default(0)
+  totalGroupLessons Int          @default(0)
+  totalContentViews Int          @default(0)
   averageRating     Float        @default(0)
   responseTimeHours Float        @default(48)
+  followerCount     Int          @default(0)
 
-  // Revenue share (percentage coach keeps)
-  revenueSharePercent Int        @default(70)
+  // Revenue share (percentage coach keeps) - determined by CoachTier
+  revenueSharePercent Int        @default(60)
+
+  // Lifetime earnings tracking
+  lifetimeEarnings    Int        @default(0) // in cents
+  pendingEarnings     Int        @default(0) // in cents
+  lastPayoutAt        DateTime?
 
   // Joseph Mayo flag
   isJosephMayo      Boolean      @default(false)
+  isFeatured        Boolean      @default(false)
+  featuredOrder     Int?
 
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription      CoachSubscription?
   swingReviews      SwingReview[]
   lessons           Lesson[]
+  groupLessons      GroupLesson[]
   availability      CoachAvailability[]
   earnings          CoachEarning[]
+  payouts           CoachPayout[]
+  payoutMethod      CoachPayoutMethod?
+  content           CommunityContent[]
+  products          CoachProduct[]
+  tips              CoachTip[]
+  referrals         CoachReferral[] @relation("CoachReferrals")
+  analytics         CoachAnalytics[]
 
   @@index([status])
   @@index([averageRating])
+  @@index([isFeatured])
 }
 
 model CoachAvailability {
@@ -359,11 +381,16 @@ model SwingReview {
   studentRating   Int?         // 1-5
   studentFeedback String?
 
+  // Community sharing consent
+  allowPublicShare Boolean     @default(false)
+  publicShareConsent DateTime? // When student consented
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   student         User         @relation("StudentReviews", fields: [studentId], references: [id], onDelete: Cascade)
   coach           Coach?       @relation(fields: [coachId], references: [id])
+  communityContent CommunityContent?
 
   @@index([studentId])
   @@index([coachId])
@@ -517,4 +544,584 @@ model Referral {
 
   @@index([referrerId])
   @@index([referralCode])
+}
+
+// ============================================
+// COACH TIERS & SUBSCRIPTIONS
+// ============================================
+
+enum CoachTier {
+  STARTER       // Free tier - 60% revenue share
+  PROFESSIONAL  // $29/mo - 70% revenue share
+  ELITE         // $79/mo - 80% revenue share
+  MASTER        // $199/mo - 85% revenue share + featured
+}
+
+model CoachSubscription {
+  id                    String      @id @default(cuid())
+  coachId               String      @unique
+  tier                  CoachTier   @default(STARTER)
+  status                String      @default("active") // active, cancelled, past_due
+
+  // Stripe info
+  stripeSubscriptionId  String?     @unique
+  stripePriceId         String?
+
+  // Billing
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean     @default(false)
+
+  // Benefits tracking
+  featuredUntil         DateTime?   // For featured coach slots
+  prioritySupport       Boolean     @default(false)
+  customBranding        Boolean     @default(false)
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  coach                 Coach       @relation(fields: [coachId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// COMMUNITY CONTENT (CAMEO-STYLE)
+// ============================================
+
+enum CommunityContentType {
+  PUBLIC_REVIEW       // Shareable swing review
+  TIP_VIDEO           // Quick coaching tip
+  DRILL_VIDEO         // Instructional drill
+  Q_AND_A             // Community Q&A response
+  ANALYSIS            // Pro player swing analysis
+}
+
+enum ContentVisibility {
+  PUBLIC              // Anyone can view
+  MEMBERS_ONLY        // Requires membership
+  TIER_RESTRICTED     // Specific membership tier
+  PURCHASERS_ONLY     // Must purchase to view
+}
+
+model CommunityContent {
+  id                String               @id @default(cuid())
+  coachId           String
+  type              CommunityContentType
+  visibility        ContentVisibility    @default(PUBLIC)
+  requiredTier      MembershipTier?      // If TIER_RESTRICTED
+
+  // Content
+  title             String
+  description       String?              @db.Text
+  videoUrl          String
+  thumbnailUrl      String?
+  duration          Int?                 // seconds
+
+  // Original review (if PUBLIC_REVIEW)
+  originalReviewId  String?              @unique
+  studentConsent    Boolean              @default(false)
+
+  // Pricing (if purchasable)
+  priceCredits      Int?                 // One-time purchase price
+  isPurchasable     Boolean              @default(false)
+
+  // Engagement
+  viewCount         Int                  @default(0)
+  likeCount         Int                  @default(0)
+  commentCount      Int                  @default(0)
+
+  // Coach earnings
+  totalEarnings     Int                  @default(0) // in cents
+
+  // Metadata
+  tags              String[]
+  isFeartured       Boolean              @default(false)
+  publishedAt       DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  coach             Coach                @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  originalReview    SwingReview?         @relation(fields: [originalReviewId], references: [id])
+  purchases         ContentPurchase[]
+  comments          ContentComment[]
+  likes             ContentLike[]
+  tips              ContentTip[]
+
+  @@index([coachId])
+  @@index([type])
+  @@index([visibility])
+  @@index([publishedAt])
+}
+
+model ContentPurchase {
+  id              String           @id @default(cuid())
+  contentId       String
+  userId          String
+  creditsPaid     Int
+  createdAt       DateTime         @default(now())
+
+  content         CommunityContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, userId])
+  @@index([userId])
+}
+
+model ContentComment {
+  id              String           @id @default(cuid())
+  contentId       String
+  userId          String
+  parentId        String?          // For replies
+  text            String           @db.Text
+  isCoachReply    Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  content         CommunityContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([parentId])
+}
+
+model ContentLike {
+  id              String           @id @default(cuid())
+  contentId       String
+  userId          String
+  createdAt       DateTime         @default(now())
+
+  content         CommunityContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, userId])
+}
+
+// ============================================
+// TIPPING SYSTEM
+// ============================================
+
+model ContentTip {
+  id              String           @id @default(cuid())
+  contentId       String
+  tipperId        String
+  coachId         String
+  creditAmount    Int
+  message         String?
+  isAnonymous     Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+
+  content         CommunityContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId])
+  @@index([coachId])
+  @@index([tipperId])
+}
+
+model CoachTip {
+  id              String   @id @default(cuid())
+  coachId         String
+  tipperId        String
+  creditAmount    Int
+  message         String?
+  isAnonymous     Boolean  @default(false)
+  context         String?  // e.g., "lesson", "review", "general"
+  referenceId     String?  // lesson or review ID
+  createdAt       DateTime @default(now())
+
+  coach           Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([coachId])
+  @@index([tipperId])
+}
+
+// ============================================
+// CERTIFICATION PROGRAM
+// ============================================
+
+enum CertificationLevel {
+  FOUNDATIONAL      // Basic MCG methodology
+  INTERMEDIATE      // Advanced techniques
+  ADVANCED          // Full curriculum
+  MASTER            // Master instructor
+  SPECIALIST        // Specialty certifications
+}
+
+model Certification {
+  id              String             @id @default(cuid())
+  name            String
+  slug            String             @unique
+  level           CertificationLevel
+  description     String             @db.Text
+  requirements    String[]           // List of requirements
+  priceCredits    Int                // Cost to attempt
+  passingScore    Int                @default(80) // Percentage
+  validityMonths  Int?               // null = lifetime
+  badgeImageUrl   String?
+  isActive        Boolean            @default(true)
+  sortOrder       Int                @default(0)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  attempts        CertificationAttempt[]
+  coachCerts      CoachCertification[]
+}
+
+model CertificationAttempt {
+  id              String        @id @default(cuid())
+  certificationId String
+  coachId         String
+  score           Int?          // Percentage score
+  passed          Boolean       @default(false)
+  submissionUrl   String?       // Video submission URL
+  reviewNotes     String?       @db.Text
+  reviewedBy      String?       // Admin/reviewer ID
+  reviewedAt      DateTime?
+  creditsPaid     Int
+  createdAt       DateTime      @default(now())
+
+  certification   Certification @relation(fields: [certificationId], references: [id])
+
+  @@index([coachId])
+  @@index([certificationId])
+}
+
+model CoachCertification {
+  id              String        @id @default(cuid())
+  coachId         String
+  certificationId String
+  earnedAt        DateTime      @default(now())
+  expiresAt       DateTime?
+  certificateUrl  String?       // PDF certificate
+  isDisplayed     Boolean       @default(true) // Show on profile
+
+  certification   Certification @relation(fields: [certificationId], references: [id])
+
+  @@unique([coachId, certificationId])
+  @@index([coachId])
+}
+
+// ============================================
+// CONVERSATION CREDITS (CHAT MONETIZATION)
+// ============================================
+
+enum ChatSessionType {
+  FREE_TIER         // Limited messages for Pro+ members
+  CREDIT_BASED      // Pay per message/session
+  UNLIMITED         // Included with Elite+
+}
+
+model ChatSession {
+  id                String          @id @default(cuid())
+  conversationId    String
+  studentId         String
+  coachId           String
+  type              ChatSessionType @default(CREDIT_BASED)
+
+  // Credit tracking
+  creditsPerMessage Int             @default(1)
+  totalCreditsSpent Int             @default(0)
+  messageCount      Int             @default(0)
+
+  // Time-based billing
+  sessionStarted    DateTime        @default(now())
+  sessionEnded      DateTime?
+  lastActivity      DateTime        @default(now())
+
+  // Free tier limits
+  freeMessagesUsed  Int             @default(0)
+  freeMessagesLimit Int             @default(5)
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([conversationId])
+  @@index([studentId])
+  @@index([coachId])
+}
+
+// ============================================
+// COACH REFERRAL PROGRAM
+// ============================================
+
+model CoachReferral {
+  id                  String   @id @default(cuid())
+  referrerCoachId     String
+  referredCoachId     String?  @unique // If referring a new coach
+  referredStudentId   String?  @unique // If referring a student
+  referralCode        String
+  referralType        String   // 'coach' or 'student'
+
+  // Revenue sharing
+  revenueSharePercent Int      @default(5) // % of referred's revenue
+  revenueShareMonths  Int      @default(12) // Duration of rev share
+  totalEarned         Int      @default(0) // Total earned from this referral
+
+  status              String   @default("pending") // pending, active, expired
+  activatedAt         DateTime?
+  expiresAt           DateTime?
+  createdAt           DateTime @default(now())
+
+  referrerCoach       Coach    @relation("CoachReferrals", fields: [referrerCoachId], references: [id], onDelete: Cascade)
+
+  @@index([referrerCoachId])
+  @@index([referralCode])
+}
+
+// ============================================
+// CONTENT MARKETPLACE
+// ============================================
+
+enum ProductType {
+  DRILL_PACK          // Collection of drills
+  COURSE              // Multi-video course
+  EBOOK               // Written guide
+  PRACTICE_PLAN       // Structured practice plan
+  TEMPLATE            // Lesson templates for other coaches
+}
+
+model CoachProduct {
+  id                String      @id @default(cuid())
+  coachId           String
+  type              ProductType
+  name              String
+  slug              String
+  description       String      @db.Text
+  shortDescription  String?
+
+  // Pricing
+  priceCredits      Int
+  originalPrice     Int?        // For showing discounts
+  isOnSale          Boolean     @default(false)
+
+  // Content
+  coverImageUrl     String?
+  previewVideoUrl   String?
+  contentUrls       String[]    // Array of content URLs
+  downloadable      Boolean     @default(false)
+
+  // Stats
+  purchaseCount     Int         @default(0)
+  averageRating     Float       @default(0)
+  reviewCount       Int         @default(0)
+  totalRevenue      Int         @default(0) // in cents
+
+  // Status
+  isPublished       Boolean     @default(false)
+  publishedAt       DateTime?
+  isFeatured        Boolean     @default(false)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  coach             Coach       @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  purchases         ProductPurchase[]
+  reviews           ProductReview[]
+
+  @@unique([coachId, slug])
+  @@index([coachId])
+  @@index([type])
+  @@index([isPublished])
+}
+
+model ProductPurchase {
+  id              String       @id @default(cuid())
+  productId       String
+  userId          String
+  creditsPaid     Int
+  purchasedAt     DateTime     @default(now())
+
+  product         CoachProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@index([userId])
+}
+
+model ProductReview {
+  id              String       @id @default(cuid())
+  productId       String
+  userId          String
+  rating          Int          // 1-5
+  title           String?
+  content         String?      @db.Text
+  isVerified      Boolean      @default(true) // Verified purchase
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  product         CoachProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@index([productId])
+}
+
+// ============================================
+// GROUP LESSONS
+// ============================================
+
+model GroupLesson {
+  id                String    @id @default(cuid())
+  coachId           String
+  title             String
+  description       String?   @db.Text
+
+  // Scheduling
+  scheduledAt       DateTime
+  duration          Int       // minutes
+  timezone          String
+
+  // Capacity
+  maxParticipants   Int       @default(10)
+  minParticipants   Int       @default(2)
+
+  // Pricing
+  priceCredits      Int
+  earlyBirdCredits  Int?      // Discounted price
+  earlyBirdUntil    DateTime?
+
+  // Video call
+  roomUrl           String?
+  roomName          String?
+  recordingUrl      String?
+  isRecorded        Boolean   @default(true)
+
+  // Status
+  status            String    @default("scheduled") // scheduled, live, completed, cancelled
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  coach             Coach     @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  participants      GroupLessonParticipant[]
+
+  @@index([coachId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model GroupLessonParticipant {
+  id              String      @id @default(cuid())
+  groupLessonId   String
+  userId          String
+  creditsPaid     Int
+  joinedAt        DateTime    @default(now())
+  attended        Boolean     @default(false)
+  rating          Int?
+  feedback        String?
+
+  groupLesson     GroupLesson @relation(fields: [groupLessonId], references: [id], onDelete: Cascade)
+
+  @@unique([groupLessonId, userId])
+  @@index([userId])
+}
+
+// ============================================
+// PAYOUT SYSTEM
+// ============================================
+
+enum PayoutStatus {
+  PENDING           // Earnings accruing
+  PROCESSING        // Payout initiated
+  COMPLETED         // Successfully paid
+  FAILED            // Payout failed
+  ON_HOLD           // Manual review required
+}
+
+model CoachPayout {
+  id                  String       @id @default(cuid())
+  coachId             String
+  amount              Int          // in cents
+  currency            String       @default("usd")
+  status              PayoutStatus @default(PENDING)
+
+  // Breakdown
+  reviewEarnings      Int          @default(0)
+  lessonEarnings      Int          @default(0)
+  groupLessonEarnings Int          @default(0)
+  contentEarnings     Int          @default(0)
+  productEarnings     Int          @default(0)
+  tipEarnings         Int          @default(0)
+  referralEarnings    Int          @default(0)
+  chatEarnings        Int          @default(0)
+
+  // Deductions
+  platformFee         Int          @default(0)
+  processingFee       Int          @default(0)
+  adjustments         Int          @default(0)
+  adjustmentNotes     String?
+
+  // Stripe
+  stripeTransferId    String?
+  stripePayoutId      String?
+
+  // Timing
+  periodStart         DateTime
+  periodEnd           DateTime
+  processedAt         DateTime?
+  paidAt              DateTime?
+  failureReason       String?
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  coach               Coach        @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([coachId])
+  @@index([status])
+  @@index([periodEnd])
+}
+
+model CoachPayoutMethod {
+  id                String   @id @default(cuid())
+  coachId           String   @unique
+  type              String   // 'stripe_connect', 'paypal', 'bank_transfer'
+  isVerified        Boolean  @default(false)
+
+  // Stripe Connect
+  stripeAccountId   String?
+  stripeAccountType String?  // 'express', 'standard'
+
+  // PayPal
+  paypalEmail       String?
+
+  // Bank (for manual transfers)
+  bankName          String?
+  accountLastFour   String?
+  routingLastFour   String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  coach             Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// ANALYTICS & INSIGHTS
+// ============================================
+
+model CoachAnalytics {
+  id                    String   @id @default(cuid())
+  coachId               String
+  date                  DateTime @db.Date
+
+  // Revenue
+  dailyRevenue          Int      @default(0)
+  reviewRevenue         Int      @default(0)
+  lessonRevenue         Int      @default(0)
+  contentRevenue        Int      @default(0)
+  productRevenue        Int      @default(0)
+  tipRevenue            Int      @default(0)
+
+  // Activity
+  reviewsCompleted      Int      @default(0)
+  lessonsCompleted      Int      @default(0)
+  messagesResponded     Int      @default(0)
+  contentViews          Int      @default(0)
+
+  // Engagement
+  profileViews          Int      @default(0)
+  newFollowers          Int      @default(0)
+  averageRating         Float?
+
+  createdAt             DateTime @default(now())
+
+  coach                 Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@unique([coachId, date])
+  @@index([coachId])
+  @@index([date])
 }
