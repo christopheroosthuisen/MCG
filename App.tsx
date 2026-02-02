@@ -58,10 +58,10 @@ function timeAgo(date: Date) {
 // Get dynamic greeting
 function getGreeting(name: string) {
     const hour = new Date().getHours();
-    if (hour < 12) return `Good morning, ${name}`;
-    if (hour < 17) return `Good afternoon, ${name}`;
-    if (hour < 21) return `Good evening, ${name}`;
-    return `Night owl mode, ${name}`;
+    if (hour < 12) return `Morning, ${name}`;
+    if (hour < 17) return `Afternoon, ${name}`;
+    if (hour < 21) return `Evening, ${name}`;
+    return `Burning the midnight oil, ${name}`;
 }
 
 const App: React.FC = () => {
@@ -215,7 +215,7 @@ const App: React.FC = () => {
 
                             {/* Quick Actions Grid (Focused on Improvement/Analysis) */}
                             <div>
-                                <Text variant="h3" className="mb-3 px-1">Improvement Hub</Text>
+                                <Text variant="h3" className="mb-3 px-1">The Workshop</Text>
                                 <div className="grid grid-cols-3 gap-3">
                                     <QuickAction 
                                         icon="📥" 
@@ -245,10 +245,10 @@ const App: React.FC = () => {
                                             <span className="text-xl">💡</span>
                                         </div>
                                         <div className="flex-1">
-                                            <Text variant="h4" color="white" className="text-xs font-bold uppercase tracking-wider mb-1 text-gray-400">AI Insight</Text>
-                                            <Text className="text-base font-medium leading-snug mb-3">Your driver spin rate is averaging 2900rpm (+400 vs target). Try teeing the ball slightly higher.</Text>
+                                            <Text variant="h4" color="white" className="text-xs font-bold uppercase tracking-wider mb-1 text-gray-400">Maestro Insight</Text>
+                                            <Text className="text-base font-medium leading-snug mb-3">Your driver spin loft is too high — 16.8° vs the 14° target. That's costing you 400rpm and ~12 yards of carry. Let's fix it.</Text>
                                             <div className="flex gap-2">
-                                                <Button size="sm" variant="outline" className="text-xs h-8 px-3 border-gray-600 text-gray-300 hover:bg-white/5 hover:text-white hover:border-gray-400">View Data</Button>
+                                                <Button size="sm" variant="outline" className="text-xs h-8 px-3 border-gray-600 text-gray-300 hover:bg-white/5 hover:text-white hover:border-gray-400">See Numbers</Button>
                                                 <Button size="sm" variant="primary" className="text-xs h-8 px-3 bg-orange-600 hover:bg-orange-500 border-none shadow-orange-900/20">Fix It</Button>
                                             </div>
                                         </div>
@@ -298,7 +298,7 @@ const App: React.FC = () => {
                                     </div>
                                     <div>
                                         <Text variant="h4" className="text-base font-bold">Analyze Swing</Text>
-                                        <Text variant="caption" className="text-xs">AI P1-P10 Analysis</Text>
+                                        <Text variant="caption" className="text-xs">AI Ball Flight Analysis</Text>
                                     </div>
                                 </Card>
                             </div>
@@ -311,7 +311,7 @@ const App: React.FC = () => {
                     {currentTab === 'ANALYZE' && (
                         <div className="screen-enter flex flex-col h-full">
                             <div className="px-6 pt-6 pb-2 bg-white sticky top-0 z-10 border-b border-gray-100">
-                                <Text variant="caption" className="uppercase font-bold tracking-widest text-orange-500 mb-1">Data & Video</Text>
+                                <Text variant="caption" className="uppercase font-bold tracking-widest text-orange-500 mb-1">Data & Analysis</Text>
                                 <Text variant="h1" className="mb-4">Analyze</Text>
                                 <div className="flex gap-2">
                                     <button 
@@ -376,18 +376,19 @@ const App: React.FC = () => {
                     <div className="absolute inset-0 bg-white z-50 flex flex-col animate-in slide-in-from-bottom duration-300">
                         <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 safe-area-top">
                             <div>
-                                <Text variant="h4">AI Caddie</Text>
-                                <Text variant="caption" className="text-xs">Powered by Gemini 3 Pro • Search • Maps</Text>
+                                <Text variant="h4">The Maestro</Text>
+                                <Text variant="caption" className="text-xs">AI Caddie • Data-Driven Insights • Powered by Gemini</Text>
                             </div>
                             <button onClick={() => setIsChatOpen(false)} className="p-2 text-gray-500"><Icons.Close /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
                             {messages.length === 0 && (
                                 <div className="text-center text-gray-400 mt-20">
-                                    <p>Ask me about course rules, local weather, or strategy.</p>
+                                    <p>Ask about your numbers, course strategy, or ball flight. The data tells the story.</p>
                                     <div className="flex flex-wrap justify-center gap-2 mt-4">
-                                        <button onClick={() => setInput("What's the weather at Pebble Beach?")} className="text-xs bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors">Weather @ Pebble</button>
-                                        <button onClick={() => setInput("Explain the new drop rule")} className="text-xs bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors">Drop Rules</button>
+                                        <button onClick={() => setInput("What's my spin loft trending?")} className="text-xs bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors">Spin Loft Trend</button>
+                                        <button onClick={() => setInput("How do I fix my slice?")} className="text-xs bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors">Fix My Slice</button>
+                                        <button onClick={() => setInput("What club for 165 yards into the wind?")} className="text-xs bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition-colors">Club Selection</button>
                                     </div>
                                 </div>
                             )}
@@ -405,7 +406,7 @@ const App: React.FC = () => {
                                 <Input 
                                     value={input} 
                                     onChange={(e) => setInput(e.target.value)} 
-                                    placeholder="Ask your caddie..." 
+                                    placeholder="Ask the Maestro..."
                                     onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
                                 />
                                 <Button onClick={handleSendChat} disabled={loadingChat} className="px-3"><Icons.Send /></Button>

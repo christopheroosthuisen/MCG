@@ -17,8 +17,8 @@ export const FitnessView: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     return (
         <div className="pb-32 animate-in fade-in duration-500 bg-[#F5F5F7]">
             <ScreenHeader 
-                title="Golf Fitness"
-                subtitle="Performance"
+                title="Athletic Performance"
+                subtitle="Train to Swing Faster"
                 leftAction={onBack && (
                     <button onClick={onBack} className="p-2 -ml-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors">
                         <Icons.ArrowLeft />
@@ -27,7 +27,7 @@ export const FitnessView: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             />
             
             <div className="px-4">
-                <Text variant="body" color="gray" className="mb-4">Train your body to swing faster and play pain-free.</Text>
+                <Text variant="body" color="gray" className="mb-4">More speed. More power. The body drives the club — train it accordingly.</Text>
 
                 {/* Featured Program */}
                 <section className="mb-8">
@@ -37,7 +37,7 @@ export const FitnessView: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                         <div className="absolute bottom-0 left-0 p-6">
                             <Badge variant="warning" className="mb-2 bg-orange-500 text-white border-none">Trending</Badge>
                             <Text variant="h2" color="white" className="mb-1">30-Day Power Project</Text>
-                            <Text color="gray-300" className="text-sm mb-4">Add 10mph to your swing speed with this rotational power program.</Text>
+                            <Text color="gray-300" className="text-sm mb-4">Add 10mph of club speed through rotational power and ground force training.</Text>
                             <Button variant="primary" size="sm">Start Program</Button>
                         </div>
                     </div>

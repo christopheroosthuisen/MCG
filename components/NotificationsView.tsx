@@ -18,7 +18,7 @@ const NOTIFICATION_CONFIG: Record<NotificationType, {
   weather: { name: 'Weather', icon: '🌤️', color: '#87CEEB', description: 'Weather alerts for your tee times' },
   practice: { name: 'Practice', icon: '🎯', color: COLORS.success, description: 'Practice session reminders and tips' },
   system: { name: 'System', icon: '⚙️', color: COLORS.gray, description: 'App updates and system messages' },
-  coaching: { name: 'Coaching', icon: '🤖', color: '#8B5CF6', description: 'AI coach insights and recommendations' },
+  coaching: { name: 'Maestro', icon: '🤖', color: '#8B5CF6', description: 'Maestro AI insights and recommendations' },
   milestone: { name: 'Milestones', icon: '🎉', color: '#EC4899', description: 'Goal progress and celebrations' },
 };
 

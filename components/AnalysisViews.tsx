@@ -357,9 +357,9 @@ export const MediaCaptureWizard: React.FC<{
                     <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
                         <Icons.Zap />
                     </div>
-                    <Text variant="h2" color="white" className="mb-2">AI Swing Analysis</Text>
+                    <Text variant="h2" color="white" className="mb-2">Maestro Swing Analysis</Text>
                     <Text className="text-gray-400 text-sm max-w-xs mx-auto">
-                        Record or upload a swing video for a complete P1-P10 position breakdown with AI coaching
+                        Record or upload a swing video for AI-powered ball flight and position analysis with data-driven coaching
                     </Text>
                 </div>
 
@@ -1208,8 +1208,8 @@ export const AnalyzeView: React.FC<{
                         <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mb-3">
                             <Icons.Zap />
                         </div>
-                        <Text variant="h4" color="white" className="text-sm font-bold mb-1">AI Analyze</Text>
-                        <Text className="text-[10px] text-orange-100">Full P1-P10 breakdown with coaching</Text>
+                        <Text variant="h4" color="white" className="text-sm font-bold mb-1">Maestro Analyze</Text>
+                        <Text className="text-[10px] text-orange-100">Ball flight data & position breakdown</Text>
                     </div>
 
                     {/* Live Session Card */}

@@ -125,7 +125,7 @@ export const SettingsHub: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">Account</div>
                 <div className="rounded-2xl overflow-hidden border border-gray-100">
                     <SettingsMenuItem icon="🔗" label="Linked Accounts" description="Google, GHIN, TrackMan" onPress={() => setSection('ACCOUNTS')} />
-                    <SettingsMenuItem icon="⭐" label="Subscription" badge="Premium" onPress={() => {}} />
+                    <SettingsMenuItem icon="⭐" label="Subscription" badge="Maestro" onPress={() => {}} />
                 </div>
             </div>
             <div>

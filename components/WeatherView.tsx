@@ -194,7 +194,7 @@ export const WeatherView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="rounded-3xl p-6 text-white shadow-xl relative overflow-hidden bg-gradient-to-br from-sky-500 to-blue-600">
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <div className="font-bold text-lg">Pebble Beach, CA</div>
+                            <div className="font-bold text-lg">Las Vegas, NV</div>
                             <div className="text-xs opacity-80">Updated 2m ago</div>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-wider ${playabilityColor}`}>

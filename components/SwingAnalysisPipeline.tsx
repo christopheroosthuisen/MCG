@@ -37,7 +37,7 @@ const ALL_STAGES: { stage: AnalysisPipelineStage; label: string; icon: string; d
     { stage: 'EXTRACTING_FRAMES', label: 'Frame Extraction', icon: '🖼️', description: 'Extracting high-res frames at each position', tip: 'Frames are extracted at the precise moment of each P-position' },
     { stage: 'ANALYZING_POSE', label: 'Pose Analysis', icon: '🦴', description: 'Mapping skeletal joints and body positions', tip: '21 joint points including club grip, shaft, and head' },
     { stage: 'MEASURING_ANGLES', label: 'Angle Measurement', icon: '📐', description: 'Calculating joint angles at each position', tip: 'Angles compared against tour professional ideal ranges' },
-    { stage: 'GENERATING_FEEDBACK', label: 'AI Coaching', icon: '🧠', description: 'Generating personalized coaching feedback', tip: 'AI analyzes patterns across all 10 positions holistically' },
+    { stage: 'GENERATING_FEEDBACK', label: 'Maestro Feedback', icon: '🧠', description: 'Generating data-driven coaching feedback', tip: 'The Maestro analyzes face-to-path, spin loft, and all 10 positions holistically' },
     { stage: 'COMPILING_REPORT', label: 'Final Report', icon: '📊', description: 'Compiling comprehensive analysis report', tip: 'Includes score, grades, drills, and practice plan' },
 ];
 
@@ -273,7 +273,7 @@ export const SwingAnalysisPipeline: React.FC<SwingAnalysisPipelineProps> = ({
                     )}
                 </button>
                 <div className="text-center">
-                    <Text variant="h4" color="white" className="text-sm font-bold">AI Analysis</Text>
+                    <Text variant="h4" color="white" className="text-sm font-bold">Maestro Analysis</Text>
                     <div className="flex items-center gap-2 justify-center mt-0.5">
                         <span className="text-[10px] text-gray-500">{clubUsed}</span>
                         <span className="text-[10px] text-gray-600">|</span>

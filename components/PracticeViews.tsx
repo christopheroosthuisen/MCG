@@ -36,9 +36,9 @@ export const PracticeSystem: React.FC<{ onOpenTempoTool: () => void; onOpenBagOf
     return (
         <div className="space-y-6 pb-32 animate-in fade-in duration-500 relative">
             <div className="px-1 pt-6 bg-white sticky top-0 z-10 pb-4">
-                <Text variant="caption" className="uppercase font-bold tracking-widest text-orange-500 mb-1">The Lab</Text>
+                <Text variant="caption" className="uppercase font-bold tracking-widest text-orange-500 mb-1">The Maestro Lab</Text>
                 <div className="flex justify-between items-end mb-4">
-                    <Text variant="h1" className="mb-0">Practice Hub</Text>
+                    <Text variant="h1" className="mb-0">Practice</Text>
                     <Button size="sm" variant="primary" icon={isSessionActive ? <Icons.TrendUp /> : <Icons.Plus />} onClick={() => setIsSessionActive(true)}>
                         {isSessionActive ? 'View Active Session' : 'Start Session'}
                     </Button>
@@ -226,7 +226,7 @@ const PracticeDashboard: React.FC<{ onOpenTempoTool: () => void; onOpenBagOfShot
                             <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center group-hover:scale-110 transition-transform"><Icons.Target /></div>
                             <div>
                                 <Text variant="h4" className="text-base font-bold">Putting Lab</Text>
-                                <Text variant="caption" className="text-xs">AimPoint & Speed Training</Text>
+                                <Text variant="caption" className="text-xs">Green Reading & Speed Control</Text>
                             </div>
                         </div>
                         <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-400 shadow-sm group-hover:text-green-500"><Icons.ChevronRight /></div>
@@ -236,7 +236,7 @@ const PracticeDashboard: React.FC<{ onOpenTempoTool: () => void; onOpenBagOfShot
                             <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-700 flex items-center justify-center group-hover:scale-110 transition-transform"><Icons.Grid /></div>
                             <div>
                                 <Text variant="h4" className="text-base font-bold">Bag of Shots</Text>
-                                <Text variant="caption" className="text-xs">Your mastery library</Text>
+                                <Text variant="caption" className="text-xs">Your shot repertoire</Text>
                             </div>
                         </div>
                         <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-gray-400 shadow-sm group-hover:text-gray-900"><Icons.ChevronRight /></div>
@@ -249,8 +249,8 @@ const PracticeDashboard: React.FC<{ onOpenTempoTool: () => void; onOpenBagOfShot
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center"><Icons.Flag /></div>
                         <div>
-                            <Text variant="h3" className="leading-none text-green-900">Short Game Lab</Text>
-                            <Text variant="caption" className="text-xs text-green-700">Scoring zone drills</Text>
+                            <Text variant="h3" className="leading-none text-green-900">Scoring Zone</Text>
+                            <Text variant="caption" className="text-xs text-green-700">Where spin loft matters most</Text>
                         </div>
                     </div>
                 </div>
@@ -318,9 +318,9 @@ const GoalsView: React.FC = () => {
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3">
                 <div className="text-2xl">🤖</div>
                 <div>
-                    <Text variant="h4" className="text-blue-900 text-sm font-bold">AI Coach Recommendation</Text>
-                    <Text variant="caption" className="text-blue-800 text-xs mt-1">Based on your last 3 driver sessions, your spin rate is too high (2900rpm). Set a goal to lower it to 2400rpm to gain ~12 yards.</Text>
-                    <Button size="sm" variant="outline" className="mt-2 border-blue-300 text-blue-700 hover:bg-blue-100">Set Spin Goal</Button>
+                    <Text variant="h4" className="text-blue-900 text-sm font-bold">Maestro Recommendation</Text>
+                    <Text variant="caption" className="text-blue-800 text-xs mt-1">Your last 3 driver sessions show a spin loft of 16.5° (target: 14°). That's adding 500rpm and costing ~12 yards. Lower your dynamic loft or steepen your attack angle.</Text>
+                    <Button size="sm" variant="outline" className="mt-2 border-blue-300 text-blue-700 hover:bg-blue-100">Set Spin Loft Goal</Button>
                 </div>
             </div>
             {goals.map((goal) => (

@@ -578,7 +578,7 @@ Analyze this frame and provide detailed coaching feedback. For each issue found:
 5. Explain the correction needed
 6. Suggest a pro player reference whose position to emulate
 
-Be specific and actionable. Think like Butch Harmon, Sean Foley, or Pete Cowen giving a lesson.
+Be specific, data-driven, and actionable. Think like Joseph Mayo (TrackMan Maestro) — focus on face-to-path relationship, spin loft, low point, and the numbers that actually control ball flight. No vague positional advice.
 
 Return a JSON array of coaching feedback items.`
                     }

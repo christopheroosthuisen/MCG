@@ -502,7 +502,7 @@ export const AnalysisReportView: React.FC<AnalysisReportViewProps> = ({
                                 : 'border-transparent text-gray-500'
                         }`}
                     >
-                        {tab.replace('_', ' ')}
+                        {tab === 'AI_REVIEW' ? 'MAESTRO' : tab.replace('_', ' ')}
                     </button>
                 ))}
             </div>
@@ -545,7 +545,7 @@ export const AnalysisReportView: React.FC<AnalysisReportViewProps> = ({
                         {/* Summary */}
                         {analysis.summary && (
                             <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                                <Text className="text-[10px] font-bold text-gray-400 uppercase mb-2">AI Summary</Text>
+                                <Text className="text-[10px] font-bold text-gray-400 uppercase mb-2">Maestro Summary</Text>
                                 <p className="text-xs text-gray-300 leading-relaxed">{analysis.summary}</p>
                             </div>
                         )}
@@ -586,7 +586,7 @@ export const AnalysisReportView: React.FC<AnalysisReportViewProps> = ({
                                 onClick={generateAiReview}
                                 className="w-full py-4 bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl text-white font-bold text-sm hover:from-orange-600 hover:to-orange-700 active:scale-[0.98] transition-all"
                             >
-                                Generate AI Swing Review
+                                Generate Maestro Review
                             </button>
                         )}
 
@@ -594,7 +594,7 @@ export const AnalysisReportView: React.FC<AnalysisReportViewProps> = ({
                         {(aiReviewText || isGeneratingReview) && (
                             <div className="bg-white/5 rounded-xl p-4 border border-white/10">
                                 <div className="flex items-center justify-between mb-3">
-                                    <Text className="text-[10px] font-bold text-gray-400 uppercase">AI Review</Text>
+                                    <Text className="text-[10px] font-bold text-gray-400 uppercase">Maestro Review</Text>
                                     {isGeneratingReview && (
                                         <span className="text-[9px] text-orange-400 animate-pulse font-bold">Generating...</span>
                                     )}
@@ -624,7 +624,7 @@ export const AnalysisReportView: React.FC<AnalysisReportViewProps> = ({
                                 ) : (
                                     <>
                                         <span className="text-xl">🔊</span>
-                                        <span className="text-xs font-bold text-white">Listen to AI Narration</span>
+                                        <span className="text-xs font-bold text-white">Listen to Maestro Narration</span>
                                     </>
                                 )}
                             </button>
@@ -632,7 +632,7 @@ export const AnalysisReportView: React.FC<AnalysisReportViewProps> = ({
 
                         {/* Quick AI Prompts */}
                         <div>
-                            <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Quick AI Questions</Text>
+                            <Text className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Ask the Maestro</Text>
                             <div className="grid grid-cols-2 gap-2">
                                 {quickPrompts.map((prompt, i) => (
                                     <button

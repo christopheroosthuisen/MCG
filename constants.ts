@@ -43,9 +43,9 @@ export const MOCK_USER_PROFILE: UserProfile = {
     id: 'u1',
     name: 'Tiger Woods',
     email: 'goat@pgatour.com',
-    memberStatus: 'TOUR',
+    memberStatus: 'MAESTRO',
     avatarUrl: 'https://images.unsplash.com/photo-1595841696677-6489ff3f8cd1?auto=format&fit=crop&q=80&w=400',
-    homeCourse: 'Medalist Golf Club',
+    homeCourse: 'TPC Summerlin',
     onboardingCompleted: true,
     stats: {
         roundsPlayed: 14,
@@ -116,16 +116,16 @@ export const MOCK_BAG_SLOTS: BagShotSlot[] = [
 export const MOCK_LEARNING_PATHS: LearningPath[] = [
     {
         id: 'path1',
-        title: 'Breaking 90',
-        description: 'Complete guide to scoring better without changing your swing mechanics.',
+        title: 'Mastering Face-to-Path',
+        description: 'The functional face-to-path relationship is the bottom line of the golf swing. Let go of positional instruction.',
         thumbnailUrl: 'https://images.unsplash.com/photo-1593111774240-d529f12db464?auto=format&fit=crop&q=80&w=600',
         courseIds: ['c1', 'c2'],
         totalCourses: 3
     },
     {
         id: 'path2',
-        title: 'Elite Ball Striking',
-        description: 'Learn to compress the ball like a tour pro.',
+        title: 'The Spin Loft Blueprint',
+        description: 'Understand the most important metric in ball striking. Speed it up in the long game, slow it down in the short game.',
         thumbnailUrl: 'https://images.unsplash.com/photo-1629210087796-749e7b243452?auto=format&fit=crop&q=80&w=600',
         courseIds: ['c3'],
         totalCourses: 2
@@ -135,26 +135,26 @@ export const MOCK_LEARNING_PATHS: LearningPath[] = [
 export const MOCK_COURSES: Course[] = [
     {
         id: 'c1',
-        title: 'Driver Unleashed',
-        subtitle: 'Add 20 Yards',
+        title: 'Ball Flight Laws',
+        subtitle: 'The D-Plane',
         category: 'DRIVER',
-        description: 'Unlock your potential distance through ground force mechanics and optimized launch conditions.',
+        description: 'The face controls start direction. The path creates the curve. Once you understand this, everything changes.',
         thumbnailUrl: 'https://images.unsplash.com/photo-1595841696677-6489ff3f8cd1?auto=format&fit=crop&q=80&w=600',
-        instructor: 'Dr. Sasho MacKenzie',
+        instructor: 'Joseph Mayo',
         modules: [
             {
                 id: 'm1',
-                title: 'Ground Force',
+                title: 'Face & Path',
                 lessons: [
                     {
                         id: 'l1',
-                        title: 'Using the Ground',
-                        description: 'Introduction to vertical force.',
+                        title: 'Face Angle Is King',
+                        description: 'Why 75-80% of your start direction comes from the clubface.',
                         videoUrl: '',
                         durationMinutes: 12,
                         completed: true,
                         locked: false,
-                        keyTakeaways: ['Push down to go up', 'Timing is key'],
+                        keyTakeaways: ['Face controls start line', 'Path creates curvature', 'Face-to-path is everything'],
                         resources: []
                     }
                 ]
@@ -163,53 +163,53 @@ export const MOCK_COURSES: Course[] = [
         totalDuration: 45,
         progress: 33,
         handicapImpact: 2.1,
-        tagline: 'BOMB IT'
+        tagline: 'KNOW YOUR NUMBERS'
     },
     {
         id: 'c2',
-        title: 'Short Game Wizardry',
-        subtitle: 'Up & Down',
+        title: 'Spin Loft Mastery',
+        subtitle: 'Short Game',
         category: 'SHORT_GAME',
-        description: 'Master the wedges from 100 yards and in.',
+        description: 'The expert golfer slows the ball down in the short game. Spin loft is the key to controlling trajectory and spin around the greens.',
         thumbnailUrl: 'https://images.unsplash.com/photo-1592919505780-30395071e867?auto=format&fit=crop&q=80&w=600',
-        instructor: 'Phil Mickelson',
+        instructor: 'Joseph Mayo',
         modules: [],
         totalDuration: 60,
         progress: 0,
         handicapImpact: 3.5,
-        tagline: 'SAVE PAR'
+        tagline: 'CONTROL THE SPIN'
     },
     {
         id: 'c3',
-        title: 'Strokes Gained 101',
-        subtitle: 'Math of Scoring',
+        title: 'Strokes Gained',
+        subtitle: 'The Numbers',
         category: 'QUANT_ANALYSIS',
-        description: 'Understand where you are actually losing strokes.',
+        description: 'The data tells you exactly where you are losing strokes. Stop guessing, start measuring.',
         thumbnailUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=600',
-        instructor: 'Mark Broadie',
+        instructor: 'Joseph Mayo',
         modules: [],
         totalDuration: 90,
         progress: 10,
         handicapImpact: 1.5,
-        tagline: 'DATA DRIVEN'
+        tagline: 'NUMBERS DON\'T LIE'
     }
 ];
 
 export const MOCK_DRILLS: Drill[] = [
     {
         id: 'd1',
-        title: 'Gate Drill',
-        description: 'Classic putting drill for start line control.',
+        title: 'Low Point Control',
+        description: 'Train a forward low point for consistent ball-first contact. The foundation of solid striking.',
         difficulty: 'BEGINNER',
         category: 'PUTTING',
-        steps: [{ order: 1, text: 'Place two tees just wider than putter head.' }],
+        steps: [{ order: 1, text: 'Place a line of powder 2 inches in front of the ball. Strike the ball and check your divot starts at the line.' }],
         thumbnailUrl: 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?auto=format&fit=crop&q=80&w=400',
         durationMinutes: 15
     },
     {
         id: 'd2',
-        title: 'Clock Drill',
-        description: 'Pressure putting from 3, 6, and 9 feet.',
+        title: 'Face-to-Path Gate',
+        description: 'Use alignment sticks to train a functional face-to-path relationship for predictable curvature.',
         difficulty: 'INTERMEDIATE',
         category: 'PUTTING',
         steps: [],
@@ -264,20 +264,20 @@ export const MOCK_SESSIONS: TrackManSession[] = [
     {
         id: 'ts1',
         date: new Date(Date.now() - 86400000 * 2),
-        location: 'Indoor Lab',
+        location: 'The Maestro Lab',
         shotsHit: 45,
         club: 'DRIVER',
         avgMetrics: { clubSpeed: 116, spinRate: 2400 },
         bestMetrics: { clubSpeed: 119 },
         consistencyScore: 88,
-        notes: 'Feeling fast today.'
+        notes: 'Spin loft dialed in. Face-to-path tightening up.'
     }
 ];
 
 export const MOCK_ROUNDS: OnCourseRound[] = [
     {
         id: 'r1',
-        courseName: 'Pebble Beach',
+        courseName: 'TPC Summerlin',
         date: new Date(Date.now() - 86400000 * 3),
         score: 74,
         par: 72,
@@ -310,11 +310,11 @@ export const MOCK_HANDICAP_HISTORY: HandicapRecord[] = [
 
 export const MOCK_COACH: CoachProfile = {
     id: 'coach1',
-    name: 'Butch Harmon',
-    title: 'Swing Consultant',
-    location: 'Las Vegas, NV',
+    name: 'Joseph Mayo',
+    title: 'TrackMan Maestro',
+    location: 'Nashville, TN',
     avatarUrl: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&q=80&w=200',
-    specialty: 'Full Swing',
+    specialty: 'Ball Flight & Data',
     rate: 500
 };
 
@@ -455,7 +455,7 @@ export const MOCK_ACTIVITY: ActivityItem[] = [
 export const MOCK_TOURNAMENTS: Tournament[] = [
     {
         id: 't1',
-        name: 'MCG Weekly Challenge',
+        name: 'Maestro Weekly Challenge',
         description: 'Post your best 18-hole score this week',
         format: 'Stroke Play (Net)',
         startDate: new Date(),
@@ -489,7 +489,7 @@ export const MOCK_SG_HISTORY: StrokesGained[] = [
     {
         roundId: 'r1',
         date: new Date(Date.now() - 86400000 * 1),
-        courseName: 'Medalist Golf Club',
+        courseName: 'TPC Summerlin',
         offTheTee: 0.8,
         approach: -0.5,
         aroundGreen: 0.3,
@@ -502,7 +502,7 @@ export const MOCK_SG_HISTORY: StrokesGained[] = [
     {
         roundId: 'r2',
         date: new Date(Date.now() - 86400000 * 4),
-        courseName: 'PGA National',
+        courseName: 'Shadow Creek',
         offTheTee: 0.5,
         approach: 1.2,
         aroundGreen: -0.3,
@@ -515,7 +515,7 @@ export const MOCK_SG_HISTORY: StrokesGained[] = [
     {
         roundId: 'r3',
         date: new Date(Date.now() - 86400000 * 8),
-        courseName: 'Seminole',
+        courseName: 'Wynn Golf Club',
         offTheTee: -0.3,
         approach: 0.2,
         aroundGreen: 0.8,
@@ -541,7 +541,7 @@ export const MOCK_SG_HISTORY: StrokesGained[] = [
     {
         roundId: 'r5',
         date: new Date(Date.now() - 86400000 * 16),
-        courseName: 'Medalist Golf Club',
+        courseName: 'TPC Summerlin',
         offTheTee: 0.1,
         approach: -1.2,
         aroundGreen: 0.5,
@@ -605,11 +605,11 @@ export const MOCK_SUBSCRIPTION: SubscriptionInfo = {
   price: 9.99,
   billingCycle: 'monthly',
   features: [
-    'Unlimited swing analysis',
-    'AI coaching insights',
-    'Advanced statistics',
-    'No ads',
-    'Priority support',
+    'Unlimited TrackMan-style swing analysis',
+    'Maestro AI coaching insights',
+    'Advanced strokes gained & ball flight data',
+    'Full Conservatory course library',
+    'Priority access to new features',
   ],
 };
 
@@ -672,7 +672,7 @@ const generateMockHoles = (): HoleScore[] => {
 
 export const MOCK_DETAILED_ROUND: DetailedRound = {
   id: 'round-1',
-  courseName: 'TPC Scottsdale',
+  courseName: 'TPC Summerlin',
   date: new Date('2024-03-20'),
   tees: 'Blue',
   courseRating: 72.1,
@@ -860,30 +860,30 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
   {
     id: 'n1',
     type: 'achievement',
-    title: 'New Achievement Unlocked!',
-    message: 'You\'ve completed 50 practice sessions. Keep up the great work!',
+    title: 'Milestone: 50 Sessions',
+    message: 'You\'ve logged 50 practice sessions. The data is building a clear picture of your game. Keep stacking reps.',
     timestamp: '2025-07-15T10:30:00',
     status: 'unread',
     priority: 'medium',
     actionUrl: '/achievements',
-    actionLabel: 'View Achievement',
+    actionLabel: 'View Progress',
   },
   {
     id: 'n2',
     type: 'tournament',
-    title: 'Tournament Registration Open',
-    message: 'The Summer Championship is now accepting registrations. Limited spots available!',
+    title: 'Maestro Challenge Open',
+    message: 'The Maestro Summer Challenge is now accepting entries. Prove your numbers on the course.',
     timestamp: '2025-07-15T09:00:00',
     status: 'unread',
     priority: 'high',
     actionUrl: '/tournaments/summer-championship',
-    actionLabel: 'Register Now',
+    actionLabel: 'Enter Now',
   },
   {
     id: 'n3',
     type: 'weather',
-    title: 'Weather Alert',
-    message: 'Rain expected at 2 PM for your tee time at Pebble Beach. Consider rescheduling.',
+    title: 'Conditions Alert',
+    message: 'Rain expected at 2 PM for your tee time. Wind will be a factor — adjust your numbers accordingly.',
     timestamp: '2025-07-15T08:00:00',
     status: 'unread',
     priority: 'urgent',
@@ -893,13 +893,13 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
   {
     id: 'n4',
     type: 'coaching',
-    title: 'AI Coach Insight',
-    message: 'Based on your recent rounds, focusing on short game could save you 3-4 strokes per round.',
+    title: 'Maestro Insight',
+    message: 'Your spin loft on wedge shots is averaging 42\u00b0 — too low. You\'re losing 800rpm of spin. Focus on a steeper attack angle to generate more check.',
     timestamp: '2025-07-14T18:00:00',
     status: 'read',
     priority: 'medium',
     actionUrl: '/coach',
-    actionLabel: 'Start Drill',
+    actionLabel: 'See the Data',
   },
 ];
 
@@ -989,16 +989,16 @@ export const MOCK_CADDIE_TIPS: CaddieTip[] = [
   {
     id: 'tip-1',
     type: 'STRATEGY',
-    title: 'Play for Position',
-    message: "With water left, aim right-center of fairway. A 230-yard shot leaves you a comfortable 9-iron in.",
+    title: 'Play the Percentages',
+    message: "Water left, bunker right at 245. Your dispersion says 230 leaves a stock 9-iron. Take the smart play — the numbers don't lie.",
     priority: 'HIGH',
     icon: '🎯',
   },
   {
     id: 'tip-2',
     type: 'WIND',
-    title: 'Wind Adjustment',
-    message: 'NW wind at 12 mph - add 8 yards and aim slightly left.',
+    title: 'Wind Factor',
+    message: 'NW wind at 12 mph — that\'s +8 yards carry adjustment. Remember: headwind affects spin, not just distance.',
     priority: 'MEDIUM',
     icon: '💨',
   },
@@ -1006,15 +1006,15 @@ export const MOCK_CADDIE_TIPS: CaddieTip[] = [
     id: 'tip-3',
     type: 'PIN',
     title: 'Pin Position',
-    message: 'Pin is back-left, tucked behind bunker. Safer play is center-right of green.',
+    message: 'Pin is back-left, tucked behind bunker. Your SG Around-the-Green says center of the green is the play here.',
     priority: 'MEDIUM',
     icon: '📍',
   },
   {
     id: 'tip-4',
     type: 'MENTAL',
-    title: 'Trust Your Swing',
-    message: "You've hit this club well today. Commit to your target and make a confident swing.",
+    title: 'Trust the Data',
+    message: "You've struck this club well all day — your numbers confirm it. Commit to your line and let the face do the work.",
     priority: 'LOW',
     icon: '💪',
   },

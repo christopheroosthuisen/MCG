@@ -10,26 +10,26 @@ interface OnboardingProps {
 }
 
 const STEPS = [
-    { id: 'welcome', title: "Welcome to MCG", subtitle: "Master Club Golf", description: "Your AI-powered golf coach for swing analysis, practice, and course strategy.", icon: "⛳" },
-    { id: 'profile', title: "Let's Get Started", subtitle: "Profile Setup", description: "Tell us a bit about yourself.", icon: "👤" },
-    { id: 'golf_info', title: "Your Game", subtitle: "Golf Profile", description: "Help us personalize your training plan.", icon: "🏌️" },
-    { id: 'goals', title: "Set Your Goals", subtitle: "Targets", description: "What do you want to achieve?", icon: "🎯" },
-    { id: 'complete', title: "You're Ready!", subtitle: "All Set", description: "Let's hit the course.", icon: "🚀" }
+    { id: 'welcome', title: "Welcome to MCG", subtitle: "Joseph Mayo Golf", description: "Data-driven golf mastery. Understand your numbers, control your ball flight, lower your scores.", icon: "⛳" },
+    { id: 'profile', title: "Let's Get to Work", subtitle: "Your Profile", description: "Tell us about yourself so we can build your plan.", icon: "👤" },
+    { id: 'golf_info', title: "Your Game", subtitle: "The Numbers", description: "Help us understand where you are so we know where to take you.", icon: "🏌️" },
+    { id: 'goals', title: "Set Your Targets", subtitle: "Focus Areas", description: "The data will tell us the rest. What matters most to you?", icon: "🎯" },
+    { id: 'complete', title: "Let's Go", subtitle: "All Set", description: "Your Maestro plan is ready. Time to see what the numbers say.", icon: "🚀" }
 ];
 
 const SKILL_LEVELS: { value: SkillLevel; label: string; description: string }[] = [
-  { value: 'beginner', label: 'Beginner', description: 'Just starting out' },
-  { value: 'intermediate', label: 'Intermediate', description: 'Comfortable on course' },
-  { value: 'advanced', label: 'Advanced', description: 'Low handicap player' },
-  { value: 'professional', label: 'Professional', description: 'Scratch or better' },
+  { value: 'beginner', label: 'Beginner', description: 'New to the game — building fundamentals' },
+  { value: 'intermediate', label: 'Intermediate', description: 'Know the game — ready for real data' },
+  { value: 'advanced', label: 'Advanced', description: 'Single digit — chasing every stroke' },
+  { value: 'professional', label: 'Professional', description: 'Scratch or better — Tour-level data' },
 ];
 
 const GOAL_OPTIONS = [
-  { id: 'lower_handicap', title: 'Lower Handicap', icon: '📉' },
-  { id: 'break_score', title: 'Break Score Milestone', icon: '💯' },
-  { id: 'distance', title: 'Increase Distance', icon: '🚀' },
-  { id: 'consistency', title: 'Better Consistency', icon: '📊' },
-  { id: 'putting', title: 'Master Putting', icon: '⛳' },
+  { id: 'lower_handicap', title: 'Lower My Handicap', icon: '📉' },
+  { id: 'break_score', title: 'Break a Score Barrier', icon: '💯' },
+  { id: 'distance', title: 'Optimize Launch & Speed', icon: '🚀' },
+  { id: 'consistency', title: 'Tighten Dispersion', icon: '📊' },
+  { id: 'ball_flight', title: 'Control Ball Flight', icon: '🎯' },
 ];
 
 export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
@@ -155,8 +155,8 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
                 return (
                     <div className="text-center px-6">
                         <div className="text-8xl mb-6">🎉</div>
-                        <Text variant="h1" className="mb-4">You're All Set!</Text>
-                        <Text className="text-gray-500 mb-8">Your personalized golf plan is ready. Let's start improving your game.</Text>
+                        <Text variant="h1" className="mb-4">You're In</Text>
+                        <Text className="text-gray-500 mb-8">Your Maestro plan is built. The numbers will guide us from here.</Text>
                         <div className="bg-gray-50 p-4 rounded-xl text-left border border-gray-100">
                             <div className="text-xs font-bold text-gray-400 uppercase mb-2">Your Profile</div>
                             <div className="font-bold text-gray-900">{data.firstName} {data.lastName}</div>
@@ -192,7 +192,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             {/* Footer */}
             <div className="p-6 pb-8 border-t border-gray-100 bg-white">
                 <Button fullWidth size="lg" onClick={handleNext} disabled={currentStep.id === 'profile' && (!data.firstName || !data.lastName)}>
-                    {isLastStep ? "Start Training" : "Continue"}
+                    {isLastStep ? "Let's Get to Work" : "Continue"}
                 </Button>
             </div>
         </div>

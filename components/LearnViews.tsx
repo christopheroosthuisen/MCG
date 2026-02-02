@@ -72,14 +72,14 @@ const LearnDashboard: React.FC<{ onSelectCourse: (course: Course) => void }> = (
         <div className="space-y-8 pb-32 animate-in fade-in duration-500">
             {/* Header */}
             <div className="px-1 pt-6">
-                <Text variant="caption" className="uppercase font-bold tracking-widest text-orange-500 mb-1">Education</Text>
-                <Text variant="h1" className="mb-2">The Conservatory</Text>
-                <Text variant="body" color="gray">Master the art and science of the game through structured movements.</Text>
+                <Text variant="caption" className="uppercase font-bold tracking-widest text-orange-500 mb-1">The Conservatory</Text>
+                <Text variant="h1" className="mb-2">Joseph Mayo Golf</Text>
+                <Text variant="body" color="gray">Let go of positional instruction. Learn to understand the numbers that actually control ball flight.</Text>
             </div>
 
             {/* Paths of Mastery */}
             <section>
-                 <Text variant="h3" className="mb-4 px-1">Paths of Mastery</Text>
+                 <Text variant="h3" className="mb-4 px-1">Learning Tracks</Text>
                  <div className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar px-1">
                     {MOCK_LEARNING_PATHS.map(path => (
                         <div key={path.id} className="min-w-[280px] bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg shadow-gray-200/50 flex flex-col group cursor-pointer">
@@ -97,7 +97,7 @@ const LearnDashboard: React.FC<{ onSelectCourse: (course: Course) => void }> = (
                                     // In real app, navigate to path detail. Here we just open the first course of the path
                                     const firstCourse = courses.find(c => c.id === path.courseIds[0]);
                                     if(firstCourse) onSelectCourse(firstCourse);
-                                }}>Start Path</Button>
+                                }}>Begin Track</Button>
                             </div>
                         </div>
                     ))}
@@ -112,8 +112,8 @@ const LearnDashboard: React.FC<{ onSelectCourse: (course: Course) => void }> = (
                             <Icons.Activity />
                         </div>
                         <div>
-                            <Text variant="h3" color="white">Quant Lab</Text>
-                            <Text variant="caption" className="text-gray-400">Understanding the numbers</Text>
+                            <Text variant="h3" color="white">The Numbers Lab</Text>
+                            <Text variant="caption" className="text-gray-400">Because the numbers don't lie</Text>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 gap-4">
@@ -229,7 +229,7 @@ const CourseDetail: React.FC<{ course: Course; onBack: () => void; onSelectLesso
             <div className="p-6">
                 {course.modules.length === 0 && (
                     <div className="text-center py-12">
-                        <Text color="gray">Movement content coming soon.</Text>
+                        <Text color="gray">Content from The Conservatory coming soon.</Text>
                     </div>
                 )}
                 
@@ -397,7 +397,7 @@ const LessonPlayer: React.FC<{ course: Course; lesson: CourseLesson; onBack: () 
                     )}
                     {activeTab === 'COMMUNITY' && (
                          <div className="text-center py-12 text-gray-400">
-                            <Text>Join the discussion with other members.</Text>
+                            <Text>Join the discussion with fellow Maestro members.</Text>
                         </div>
                     )}
                 </div>

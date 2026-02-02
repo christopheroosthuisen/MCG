@@ -75,7 +75,7 @@ export const ProfileView: React.FC = () => {
                         </Text>
                         
                         <div className="flex justify-center gap-2">
-                            <Badge variant="dark">{user.memberStatus} Member</Badge>
+                            <Badge variant="dark">{user.memberStatus}</Badge>
                             <Badge variant="info">HCP {user.swingDNA.handicap > 0 ? '+' : ''}{user.swingDNA.handicap}</Badge>
                         </div>
                     </div>
@@ -118,7 +118,7 @@ export const ProfileView: React.FC = () => {
 
             {/* Coach Connection */}
             <section className="px-1">
-                <Text variant="h3" className="mb-3">My Coach</Text>
+                <Text variant="h3" className="mb-3">My Maestro</Text>
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 flex gap-4 items-center">
                     <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
                         <img src={coach.avatarUrl} alt={coach.name} className="w-full h-full object-cover" />
