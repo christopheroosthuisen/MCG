@@ -1,0 +1,8 @@
+{
+  "name": "Mayo Conservatory of Golf (MCG)",
+  "description": "AI-powered golf training app focusing on video analysis, swing coaching, and comprehensive training tools.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
