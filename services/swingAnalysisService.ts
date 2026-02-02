@@ -1268,41 +1268,185 @@ export function generateMockAnalysis(videoUrl: string, thumbnailUrl: string): Fu
     };
 }
 
+// ============================================================
+// POSITION-SPECIFIC SKELETON TEMPLATES
+// Realistic joint coordinates for each P1-P10 position (face-on view)
+// ============================================================
+
+const POSITION_SKELETONS: Record<SwingPositionId, Record<string, { x: number; y: number }>> = {
+    'P1': { // Address - standing tall, club grounded
+        HEAD: { x: 0.50, y: 0.10 }, NECK: { x: 0.50, y: 0.16 },
+        LEFT_SHOULDER: { x: 0.42, y: 0.21 }, RIGHT_SHOULDER: { x: 0.58, y: 0.21 },
+        LEFT_ELBOW: { x: 0.37, y: 0.34 }, RIGHT_ELBOW: { x: 0.63, y: 0.34 },
+        LEFT_WRIST: { x: 0.44, y: 0.46 }, RIGHT_WRIST: { x: 0.56, y: 0.46 },
+        LEFT_HIP: { x: 0.44, y: 0.50 }, RIGHT_HIP: { x: 0.56, y: 0.50 },
+        LEFT_KNEE: { x: 0.43, y: 0.68 }, RIGHT_KNEE: { x: 0.57, y: 0.68 },
+        LEFT_ANKLE: { x: 0.41, y: 0.88 }, RIGHT_ANKLE: { x: 0.59, y: 0.88 },
+        SPINE_MID: { x: 0.50, y: 0.34 }, SPINE_BASE: { x: 0.50, y: 0.50 },
+        LEFT_HAND: { x: 0.46, y: 0.48 }, RIGHT_HAND: { x: 0.54, y: 0.48 },
+        CLUB_GRIP: { x: 0.50, y: 0.48 }, CLUB_SHAFT_MID: { x: 0.50, y: 0.66 },
+        CLUB_HEAD: { x: 0.50, y: 0.85 },
+    },
+    'P2': { // Shaft parallel backswing - hands moving right, club low
+        HEAD: { x: 0.50, y: 0.10 }, NECK: { x: 0.50, y: 0.16 },
+        LEFT_SHOULDER: { x: 0.43, y: 0.21 }, RIGHT_SHOULDER: { x: 0.58, y: 0.21 },
+        LEFT_ELBOW: { x: 0.42, y: 0.33 }, RIGHT_ELBOW: { x: 0.66, y: 0.31 },
+        LEFT_WRIST: { x: 0.52, y: 0.42 }, RIGHT_WRIST: { x: 0.64, y: 0.40 },
+        LEFT_HIP: { x: 0.44, y: 0.50 }, RIGHT_HIP: { x: 0.57, y: 0.50 },
+        LEFT_KNEE: { x: 0.43, y: 0.68 }, RIGHT_KNEE: { x: 0.57, y: 0.67 },
+        LEFT_ANKLE: { x: 0.41, y: 0.88 }, RIGHT_ANKLE: { x: 0.59, y: 0.88 },
+        SPINE_MID: { x: 0.50, y: 0.34 }, SPINE_BASE: { x: 0.50, y: 0.50 },
+        LEFT_HAND: { x: 0.55, y: 0.43 }, RIGHT_HAND: { x: 0.62, y: 0.41 },
+        CLUB_GRIP: { x: 0.58, y: 0.42 }, CLUB_SHAFT_MID: { x: 0.70, y: 0.42 },
+        CLUB_HEAD: { x: 0.82, y: 0.42 },
+    },
+    'P3': { // Left arm parallel backswing - arms up, wrists cocking
+        HEAD: { x: 0.49, y: 0.10 }, NECK: { x: 0.50, y: 0.16 },
+        LEFT_SHOULDER: { x: 0.44, y: 0.20 }, RIGHT_SHOULDER: { x: 0.59, y: 0.22 },
+        LEFT_ELBOW: { x: 0.50, y: 0.26 }, RIGHT_ELBOW: { x: 0.68, y: 0.26 },
+        LEFT_WRIST: { x: 0.60, y: 0.26 }, RIGHT_WRIST: { x: 0.68, y: 0.30 },
+        LEFT_HIP: { x: 0.45, y: 0.50 }, RIGHT_HIP: { x: 0.57, y: 0.49 },
+        LEFT_KNEE: { x: 0.44, y: 0.68 }, RIGHT_KNEE: { x: 0.57, y: 0.67 },
+        LEFT_ANKLE: { x: 0.41, y: 0.88 }, RIGHT_ANKLE: { x: 0.59, y: 0.88 },
+        SPINE_MID: { x: 0.51, y: 0.34 }, SPINE_BASE: { x: 0.51, y: 0.50 },
+        LEFT_HAND: { x: 0.62, y: 0.27 }, RIGHT_HAND: { x: 0.67, y: 0.30 },
+        CLUB_GRIP: { x: 0.64, y: 0.28 }, CLUB_SHAFT_MID: { x: 0.66, y: 0.16 },
+        CLUB_HEAD: { x: 0.68, y: 0.06 },
+    },
+    'P4': { // Top of backswing - full shoulder turn, club behind head
+        HEAD: { x: 0.48, y: 0.10 }, NECK: { x: 0.50, y: 0.17 },
+        LEFT_SHOULDER: { x: 0.48, y: 0.20 }, RIGHT_SHOULDER: { x: 0.60, y: 0.23 },
+        LEFT_ELBOW: { x: 0.55, y: 0.16 }, RIGHT_ELBOW: { x: 0.68, y: 0.22 },
+        LEFT_WRIST: { x: 0.64, y: 0.14 }, RIGHT_WRIST: { x: 0.66, y: 0.18 },
+        LEFT_HIP: { x: 0.46, y: 0.50 }, RIGHT_HIP: { x: 0.58, y: 0.49 },
+        LEFT_KNEE: { x: 0.46, y: 0.68 }, RIGHT_KNEE: { x: 0.57, y: 0.66 },
+        LEFT_ANKLE: { x: 0.42, y: 0.88 }, RIGHT_ANKLE: { x: 0.59, y: 0.88 },
+        SPINE_MID: { x: 0.52, y: 0.35 }, SPINE_BASE: { x: 0.52, y: 0.50 },
+        LEFT_HAND: { x: 0.64, y: 0.14 }, RIGHT_HAND: { x: 0.66, y: 0.17 },
+        CLUB_GRIP: { x: 0.65, y: 0.15 }, CLUB_SHAFT_MID: { x: 0.55, y: 0.10 },
+        CLUB_HEAD: { x: 0.42, y: 0.14 },
+    },
+    'P5': { // Left arm parallel downswing - transition, lag building
+        HEAD: { x: 0.48, y: 0.10 }, NECK: { x: 0.49, y: 0.17 },
+        LEFT_SHOULDER: { x: 0.44, y: 0.20 }, RIGHT_SHOULDER: { x: 0.58, y: 0.23 },
+        LEFT_ELBOW: { x: 0.46, y: 0.24 }, RIGHT_ELBOW: { x: 0.64, y: 0.26 },
+        LEFT_WRIST: { x: 0.54, y: 0.26 }, RIGHT_WRIST: { x: 0.62, y: 0.26 },
+        LEFT_HIP: { x: 0.43, y: 0.50 }, RIGHT_HIP: { x: 0.56, y: 0.50 },
+        LEFT_KNEE: { x: 0.42, y: 0.68 }, RIGHT_KNEE: { x: 0.57, y: 0.68 },
+        LEFT_ANKLE: { x: 0.40, y: 0.88 }, RIGHT_ANKLE: { x: 0.59, y: 0.88 },
+        SPINE_MID: { x: 0.50, y: 0.34 }, SPINE_BASE: { x: 0.50, y: 0.50 },
+        LEFT_HAND: { x: 0.56, y: 0.27 }, RIGHT_HAND: { x: 0.61, y: 0.27 },
+        CLUB_GRIP: { x: 0.58, y: 0.27 }, CLUB_SHAFT_MID: { x: 0.63, y: 0.14 },
+        CLUB_HEAD: { x: 0.68, y: 0.06 },
+    },
+    'P6': { // Shaft parallel downswing - shaft dropping, lag retained
+        HEAD: { x: 0.48, y: 0.10 }, NECK: { x: 0.49, y: 0.17 },
+        LEFT_SHOULDER: { x: 0.42, y: 0.21 }, RIGHT_SHOULDER: { x: 0.57, y: 0.24 },
+        LEFT_ELBOW: { x: 0.39, y: 0.32 }, RIGHT_ELBOW: { x: 0.58, y: 0.34 },
+        LEFT_WRIST: { x: 0.44, y: 0.40 }, RIGHT_WRIST: { x: 0.54, y: 0.38 },
+        LEFT_HIP: { x: 0.42, y: 0.50 }, RIGHT_HIP: { x: 0.56, y: 0.51 },
+        LEFT_KNEE: { x: 0.40, y: 0.68 }, RIGHT_KNEE: { x: 0.57, y: 0.69 },
+        LEFT_ANKLE: { x: 0.39, y: 0.88 }, RIGHT_ANKLE: { x: 0.59, y: 0.88 },
+        SPINE_MID: { x: 0.49, y: 0.34 }, SPINE_BASE: { x: 0.49, y: 0.50 },
+        LEFT_HAND: { x: 0.46, y: 0.42 }, RIGHT_HAND: { x: 0.53, y: 0.39 },
+        CLUB_GRIP: { x: 0.49, y: 0.40 }, CLUB_SHAFT_MID: { x: 0.60, y: 0.40 },
+        CLUB_HEAD: { x: 0.72, y: 0.40 },
+    },
+    'P7': { // Impact - hips open, hands ahead, shaft lean forward
+        HEAD: { x: 0.48, y: 0.11 }, NECK: { x: 0.48, y: 0.17 },
+        LEFT_SHOULDER: { x: 0.40, y: 0.21 }, RIGHT_SHOULDER: { x: 0.57, y: 0.24 },
+        LEFT_ELBOW: { x: 0.36, y: 0.34 }, RIGHT_ELBOW: { x: 0.56, y: 0.38 },
+        LEFT_WRIST: { x: 0.42, y: 0.46 }, RIGHT_WRIST: { x: 0.52, y: 0.46 },
+        LEFT_HIP: { x: 0.41, y: 0.50 }, RIGHT_HIP: { x: 0.55, y: 0.51 },
+        LEFT_KNEE: { x: 0.39, y: 0.68 }, RIGHT_KNEE: { x: 0.57, y: 0.70 },
+        LEFT_ANKLE: { x: 0.38, y: 0.88 }, RIGHT_ANKLE: { x: 0.59, y: 0.88 },
+        SPINE_MID: { x: 0.48, y: 0.34 }, SPINE_BASE: { x: 0.48, y: 0.50 },
+        LEFT_HAND: { x: 0.44, y: 0.48 }, RIGHT_HAND: { x: 0.52, y: 0.47 },
+        CLUB_GRIP: { x: 0.48, y: 0.47 }, CLUB_SHAFT_MID: { x: 0.48, y: 0.66 },
+        CLUB_HEAD: { x: 0.48, y: 0.85 },
+    },
+    'P8': { // Shaft parallel follow through - full extension
+        HEAD: { x: 0.48, y: 0.12 }, NECK: { x: 0.47, y: 0.18 },
+        LEFT_SHOULDER: { x: 0.38, y: 0.22 }, RIGHT_SHOULDER: { x: 0.55, y: 0.26 },
+        LEFT_ELBOW: { x: 0.30, y: 0.28 }, RIGHT_ELBOW: { x: 0.46, y: 0.32 },
+        LEFT_WRIST: { x: 0.28, y: 0.38 }, RIGHT_WRIST: { x: 0.38, y: 0.38 },
+        LEFT_HIP: { x: 0.40, y: 0.50 }, RIGHT_HIP: { x: 0.54, y: 0.52 },
+        LEFT_KNEE: { x: 0.38, y: 0.68 }, RIGHT_KNEE: { x: 0.56, y: 0.71 },
+        LEFT_ANKLE: { x: 0.37, y: 0.88 }, RIGHT_ANKLE: { x: 0.58, y: 0.88 },
+        SPINE_MID: { x: 0.46, y: 0.34 }, SPINE_BASE: { x: 0.47, y: 0.50 },
+        LEFT_HAND: { x: 0.28, y: 0.40 }, RIGHT_HAND: { x: 0.36, y: 0.39 },
+        CLUB_GRIP: { x: 0.32, y: 0.39 }, CLUB_SHAFT_MID: { x: 0.22, y: 0.40 },
+        CLUB_HEAD: { x: 0.12, y: 0.40 },
+    },
+    'P9': { // Right arm parallel follow through - club wrapping
+        HEAD: { x: 0.47, y: 0.12 }, NECK: { x: 0.46, y: 0.18 },
+        LEFT_SHOULDER: { x: 0.36, y: 0.22 }, RIGHT_SHOULDER: { x: 0.54, y: 0.27 },
+        LEFT_ELBOW: { x: 0.30, y: 0.20 }, RIGHT_ELBOW: { x: 0.42, y: 0.28 },
+        LEFT_WRIST: { x: 0.32, y: 0.26 }, RIGHT_WRIST: { x: 0.36, y: 0.28 },
+        LEFT_HIP: { x: 0.39, y: 0.50 }, RIGHT_HIP: { x: 0.53, y: 0.52 },
+        LEFT_KNEE: { x: 0.37, y: 0.68 }, RIGHT_KNEE: { x: 0.55, y: 0.72 },
+        LEFT_ANKLE: { x: 0.37, y: 0.88 }, RIGHT_ANKLE: { x: 0.57, y: 0.87 },
+        SPINE_MID: { x: 0.44, y: 0.34 }, SPINE_BASE: { x: 0.46, y: 0.50 },
+        LEFT_HAND: { x: 0.32, y: 0.26 }, RIGHT_HAND: { x: 0.36, y: 0.28 },
+        CLUB_GRIP: { x: 0.34, y: 0.27 }, CLUB_SHAFT_MID: { x: 0.32, y: 0.16 },
+        CLUB_HEAD: { x: 0.30, y: 0.06 },
+    },
+    'P10': { // Finish - full rotation, balanced
+        HEAD: { x: 0.46, y: 0.12 }, NECK: { x: 0.44, y: 0.18 },
+        LEFT_SHOULDER: { x: 0.36, y: 0.22 }, RIGHT_SHOULDER: { x: 0.52, y: 0.28 },
+        LEFT_ELBOW: { x: 0.34, y: 0.16 }, RIGHT_ELBOW: { x: 0.42, y: 0.22 },
+        LEFT_WRIST: { x: 0.40, y: 0.14 }, RIGHT_WRIST: { x: 0.42, y: 0.18 },
+        LEFT_HIP: { x: 0.38, y: 0.50 }, RIGHT_HIP: { x: 0.52, y: 0.52 },
+        LEFT_KNEE: { x: 0.37, y: 0.68 }, RIGHT_KNEE: { x: 0.52, y: 0.73 },
+        LEFT_ANKLE: { x: 0.37, y: 0.88 }, RIGHT_ANKLE: { x: 0.55, y: 0.86 },
+        SPINE_MID: { x: 0.42, y: 0.34 }, SPINE_BASE: { x: 0.44, y: 0.50 },
+        LEFT_HAND: { x: 0.40, y: 0.14 }, RIGHT_HAND: { x: 0.42, y: 0.18 },
+        CLUB_GRIP: { x: 0.41, y: 0.16 }, CLUB_SHAFT_MID: { x: 0.48, y: 0.12 },
+        CLUB_HEAD: { x: 0.56, y: 0.14 },
+    },
+};
+
+// Angle joint triplets for each position's key angles
+const ANGLE_JOINT_MAPPING: Record<string, { a: SkeletonJoint; b: SkeletonJoint; c: SkeletonJoint }> = {
+    'Spine Tilt':       { a: 'HEAD',           b: 'SPINE_BASE',     c: 'LEFT_ANKLE' },
+    'Knee Flex':        { a: 'LEFT_HIP',       b: 'LEFT_KNEE',      c: 'LEFT_ANKLE' },
+    'Hip Hinge':        { a: 'LEFT_SHOULDER',  b: 'LEFT_HIP',       c: 'LEFT_KNEE' },
+    'Arm Hang':         { a: 'NECK',           b: 'LEFT_SHOULDER',  c: 'LEFT_ELBOW' },
+    'Wrist Hinge':      { a: 'LEFT_ELBOW',     b: 'LEFT_WRIST',     c: 'CLUB_GRIP' },
+    'Shoulder Turn':    { a: 'LEFT_SHOULDER',  b: 'SPINE_MID',      c: 'RIGHT_SHOULDER' },
+    'Hip Turn':         { a: 'LEFT_HIP',       b: 'SPINE_BASE',     c: 'RIGHT_HIP' },
+    'Left Arm Extension':{ a: 'LEFT_SHOULDER', b: 'LEFT_ELBOW',     c: 'LEFT_WRIST' },
+    'Wrist Cock':       { a: 'LEFT_ELBOW',     b: 'LEFT_WRIST',     c: 'CLUB_GRIP' },
+    'Left Wrist Angle': { a: 'LEFT_ELBOW',     b: 'LEFT_WRIST',     c: 'CLUB_GRIP' },
+    'Right Elbow Angle':{ a: 'RIGHT_SHOULDER', b: 'RIGHT_ELBOW',    c: 'RIGHT_WRIST' },
+    'X-Factor':         { a: 'LEFT_SHOULDER',  b: 'SPINE_MID',      c: 'RIGHT_HIP' },
+    'Lag Angle':        { a: 'LEFT_SHOULDER',  b: 'LEFT_WRIST',     c: 'CLUB_HEAD' },
+    'Hip Rotation':     { a: 'LEFT_HIP',       b: 'SPINE_BASE',     c: 'RIGHT_HIP' },
+    'Shoulder Tilt':    { a: 'LEFT_SHOULDER',  b: 'NECK',           c: 'RIGHT_SHOULDER' },
+    'Knee Flex (Lead)': { a: 'LEFT_HIP',       b: 'LEFT_KNEE',      c: 'LEFT_ANKLE' },
+    'Right Elbow':      { a: 'RIGHT_SHOULDER', b: 'RIGHT_ELBOW',    c: 'RIGHT_WRIST' },
+    'Lag Retention':    { a: 'LEFT_SHOULDER',  b: 'LEFT_WRIST',     c: 'CLUB_HEAD' },
+    'Hip Open':         { a: 'LEFT_HIP',       b: 'SPINE_BASE',     c: 'RIGHT_HIP' },
+    'Shoulder Open':    { a: 'LEFT_SHOULDER',  b: 'SPINE_MID',      c: 'RIGHT_SHOULDER' },
+    'Shaft Lean':       { a: 'LEFT_WRIST',     b: 'CLUB_GRIP',      c: 'CLUB_HEAD' },
+    'Left Knee Extension':{ a: 'LEFT_HIP',     b: 'LEFT_KNEE',      c: 'LEFT_ANKLE' },
+    'Arm Extension':    { a: 'LEFT_SHOULDER',  b: 'LEFT_ELBOW',     c: 'LEFT_WRIST' },
+    'Body Rotation':    { a: 'LEFT_SHOULDER',  b: 'SPINE_MID',      c: 'RIGHT_SHOULDER' },
+    'Right Foot Lift':  { a: 'RIGHT_KNEE',     b: 'RIGHT_ANKLE',    c: 'LEFT_ANKLE' },
+    'Right Arm Extension':{ a: 'RIGHT_SHOULDER',b: 'RIGHT_ELBOW',   c: 'RIGHT_WRIST' },
+    'Spine Angle':      { a: 'HEAD',           b: 'SPINE_MID',      c: 'SPINE_BASE' },
+    'Balance':          { a: 'HEAD',           b: 'SPINE_BASE',     c: 'LEFT_ANKLE' },
+};
+
 function generateMockSkeleton(positionId: SwingPositionId): SkeletonJointData[] {
-    // Generate realistic-ish skeleton positions based on the swing position
-    const basePositions: Record<string, { x: number; y: number }> = {
-        'HEAD': { x: 0.50, y: 0.12 },
-        'NECK': { x: 0.50, y: 0.18 },
-        'LEFT_SHOULDER': { x: 0.42, y: 0.22 },
-        'RIGHT_SHOULDER': { x: 0.58, y: 0.22 },
-        'LEFT_ELBOW': { x: 0.35, y: 0.35 },
-        'RIGHT_ELBOW': { x: 0.65, y: 0.35 },
-        'LEFT_WRIST': { x: 0.38, y: 0.48 },
-        'RIGHT_WRIST': { x: 0.62, y: 0.48 },
-        'LEFT_HIP': { x: 0.44, y: 0.50 },
-        'RIGHT_HIP': { x: 0.56, y: 0.50 },
-        'LEFT_KNEE': { x: 0.42, y: 0.68 },
-        'RIGHT_KNEE': { x: 0.58, y: 0.68 },
-        'LEFT_ANKLE': { x: 0.40, y: 0.88 },
-        'RIGHT_ANKLE': { x: 0.60, y: 0.88 },
-        'SPINE_MID': { x: 0.50, y: 0.35 },
-        'SPINE_BASE': { x: 0.50, y: 0.50 },
-        'LEFT_HAND': { x: 0.37, y: 0.50 },
-        'RIGHT_HAND': { x: 0.63, y: 0.50 },
-        'CLUB_GRIP': { x: 0.50, y: 0.50 },
-        'CLUB_SHAFT_MID': { x: 0.50, y: 0.60 },
-        'CLUB_HEAD': { x: 0.50, y: 0.72 },
-    };
+    const template = POSITION_SKELETONS[positionId] || POSITION_SKELETONS['P1'];
+    const jitter = 0.012; // small random jitter for realism
 
-    // Apply position-specific adjustments
-    const posIndex = parseInt(positionId.replace('P', '')) - 1;
-    const rotationFactor = posIndex <= 4 ? posIndex * 0.03 : (10 - posIndex) * 0.03;
-
-    return Object.entries(basePositions).map(([joint, pos]) => ({
+    return Object.entries(template).map(([joint, pos]) => ({
         joint: joint as SkeletonJoint,
-        x: Math.max(0.05, Math.min(0.95, pos.x + (Math.random() - 0.5) * 0.04 + (joint.startsWith('RIGHT') ? rotationFactor : -rotationFactor))),
-        y: Math.max(0.05, Math.min(0.95, pos.y + (Math.random() - 0.5) * 0.03)),
-        confidence: 0.8 + Math.random() * 0.2,
+        x: Math.max(0.02, Math.min(0.98, pos.x + (Math.random() - 0.5) * jitter)),
+        y: Math.max(0.02, Math.min(0.98, pos.y + (Math.random() - 0.5) * jitter)),
+        confidence: 0.85 + Math.random() * 0.14,
         visible: true
     }));
 }
@@ -1310,40 +1454,234 @@ function generateMockSkeleton(positionId: SwingPositionId): SkeletonJointData[] 
 function generateMockCoaching(positionId: SwingPositionId): PositionCoachingFeedback[] {
     const feedbackPool: Record<SwingPositionId, PositionCoachingFeedback[]> = {
         'P1': [
-            { id: crypto.randomUUID(), category: 'POSTURE', severity: 'TIP', title: 'Good athletic setup', description: 'Your address position shows good balance and readiness.', correction: 'Slight improvement: try widening stance by 1 inch for more stability.', proReference: 'Rory McIlroy' },
-            { id: crypto.randomUUID(), category: 'ALIGNMENT', severity: 'INFO', title: 'Shoulders slightly open', description: 'Shoulders are aligned slightly left of target which is acceptable for a fade bias.', correction: 'If drawing is the goal, close shoulders slightly.', proReference: 'Tiger Woods' }
+            { id: crypto.randomUUID(), category: 'POSTURE', severity: 'TIP', title: 'Good athletic setup', description: 'Your address position shows good balance with weight distributed evenly. Spine angle is within the ideal range at setup.', correction: 'Slight improvement: try widening stance by 1 inch for more stability with the driver. Ensure your belt buckle points slightly ahead of the ball.', proReference: 'Rory McIlroy' },
+            { id: crypto.randomUUID(), category: 'ALIGNMENT', severity: 'INFO', title: 'Shoulders slightly open', description: 'Shoulders are aligned 3-5° left of the target line. This is acceptable for a fade bias but not ideal for a draw.', correction: 'If drawing is the goal, close shoulders slightly so they\'re parallel or 1-2° right of target. Use alignment sticks during practice.', proReference: 'Tiger Woods' },
+            { id: crypto.randomUUID(), category: 'GRIP', severity: 'TIP', title: 'Neutral grip position', description: 'Hands are in a strong neutral position with 2-2.5 knuckles visible on the lead hand. V-lines point between chin and trail shoulder.', correction: 'This is a solid grip. Maintain this pressure level (4/10) throughout the swing.', proReference: 'Ben Hogan' }
         ],
         'P2': [
-            { id: crypto.randomUUID(), category: 'PLANE', severity: 'TIP', title: 'Takeaway on plane', description: 'Club is tracking well parallel to the target line.', correction: 'Maintain this path by keeping the triangle intact.', proReference: 'Ben Hogan' },
+            { id: crypto.randomUUID(), category: 'PLANE', severity: 'TIP', title: 'Takeaway on plane', description: 'Club shaft is tracking parallel to the target line with the club head just outside the left shoe tip. The one-piece takeaway is maintaining the arm-shoulder triangle.', correction: 'Maintain this path by keeping the triangle intact. Feel the right wrist hinging like a handshake motion.', proReference: 'Ben Hogan' },
+            { id: crypto.randomUUID(), category: 'WRIST', severity: 'INFO', title: 'Proper wrist hinge initiation', description: 'Right wrist is beginning to hinge correctly with the forearm fanning naturally. This creates the proper base for wrist cock.', correction: 'Continue letting the wrist hinge naturally. Don\'t force it or delay it.', proReference: 'Sam Snead' },
         ],
         'P3': [
-            { id: crypto.randomUUID(), category: 'WRIST', severity: 'WARNING', title: 'Wrist slightly cupped', description: 'Left wrist showing slight cup at this position.', correction: 'Focus on keeping the left wrist flat or slightly bowed. Feel like the back of your left hand faces the sky.', proReference: 'Dustin Johnson' },
+            { id: crypto.randomUUID(), category: 'WRIST', severity: 'WARNING', title: 'Wrist slightly cupped', description: 'Left wrist showing a slight cup (extension) at this position. The back of the left hand should be more flat or even slightly bowed. This open face position will need to be recovered later.', correction: 'Focus on keeping the left wrist flat or slightly bowed. Feel like the back of your left hand faces the sky. A bowed wrist here (like DJ) pre-sets a square face.', proReference: 'Dustin Johnson' },
+            { id: crypto.randomUUID(), category: 'PLANE', severity: 'TIP', title: 'Club shaft on plane', description: 'Shaft is bisecting the right bicep correctly and pointing at the baseline of the plane. Good arm structure.', correction: 'Maintain this relationship. The elbows should remain level to the ground at this position.', proReference: 'Adam Scott' },
         ],
         'P4': [
-            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'INFO', title: 'Full shoulder turn', description: 'Excellent 95° shoulder turn creating good coil.', correction: 'This is a strength. Maintain this turn depth.', proReference: 'John Rahm' },
-            { id: crypto.randomUUID(), category: 'BALANCE', severity: 'TIP', title: 'Weight slightly toward toes', description: 'Pressure has moved slightly toward the toes at the top.', correction: 'Feel the weight in the middle to heel of the trail foot at the top.', proReference: 'Tiger Woods' }
+            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'INFO', title: 'Full shoulder turn', description: 'Excellent 95° shoulder turn creating outstanding coil against 45° hip turn. This X-factor of 50° is ideal for power generation with the driver.', correction: 'This is a major strength. Maintain this turn depth. The key is the spine has gone from slightly flexed at P3 to extended here.', proReference: 'Jon Rahm' },
+            { id: crypto.randomUUID(), category: 'BALANCE', severity: 'TIP', title: 'Weight slightly toward toes', description: 'Pressure has moved slightly toward the toes at the top. This can cause you to stand up through impact (early extension).', correction: 'Feel the weight in the middle to heel of the trail foot at the top. Maintain the right knee flex angle from address.', proReference: 'Tiger Woods' },
+            { id: crypto.randomUUID(), category: 'WRIST', severity: 'INFO', title: 'Left wrist angle acceptable', description: 'Left wrist is flat at the top with the club face matching the left forearm angle. This is a neutral position that produces reliable shots.', correction: 'A flat wrist here is textbook. Some tour players prefer slightly bowed for a closed face, but flat is perfectly functional.', proReference: 'Collin Morikawa' },
         ],
         'P5': [
-            { id: crypto.randomUUID(), category: 'WEIGHT_SHIFT', severity: 'WARNING', title: 'Transition could be smoother', description: 'The transition from backswing to downswing shows a slight lurch.', correction: 'Feel the lower body start the downswing while the upper body is still completing the backswing. This creates the X-factor stretch.', proReference: 'Rory McIlroy' },
+            { id: crypto.randomUUID(), category: 'WEIGHT_SHIFT', severity: 'WARNING', title: 'Transition could be smoother', description: 'The transition shows a slight lurch rather than a smooth weight shift. The left side should move over the left foot with the hands still above the shoulder (the P4.5 launch pad).', correction: 'Feel the lower body start the downswing while the upper body is still completing the backswing. This creates the X-factor stretch that generates tour-level power.', proReference: 'Rory McIlroy' },
+            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'TIP', title: 'Good lag building', description: 'Significant lag is being maintained with the wrist cock angle increasing in transition. The left arm is properly pinned on the upper left pec.', correction: 'Don\'t try to hold the lag consciously. Let the body rotation and gravity create and maintain it naturally.', proReference: 'Sergio Garcia' },
         ],
         'P6': [
-            { id: crypto.randomUUID(), category: 'CLUB_FACE', severity: 'WARNING', title: 'Club face slightly open', description: 'The club face appears 5-8° open relative to the shaft plane.', correction: 'Focus on maintaining the left wrist bow from P5. The toe of the club should point slightly toward the ground here.', proReference: 'Collin Morikawa' },
-            { id: crypto.randomUUID(), category: 'CLUB_PATH', severity: 'TIP', title: 'Shaft slightly steep', description: 'Club shaft is slightly above the ideal plane.', correction: 'Feel the right elbow dropping closer to the right hip to shallow the shaft.', proReference: 'Matt Wolff' }
+            { id: crypto.randomUUID(), category: 'CLUB_FACE', severity: 'WARNING', title: 'Club face slightly open', description: 'The club face appears 5-8° open relative to the shaft plane. The toe should be pointing slightly toward the ground at this point for a square impact.', correction: 'Focus on maintaining the left wrist bow from P5. The toe of the club should point slightly toward the ground here. Feel the right forearm starting to rotate over.', proReference: 'Collin Morikawa' },
+            { id: crypto.randomUUID(), category: 'CLUB_PATH', severity: 'TIP', title: 'Shaft slightly steep', description: 'Club shaft is riding slightly above the ideal plane. This steep approach can lead to pulls and over-the-top tendencies.', correction: 'Feel the right elbow dropping closer to the right hip to shallow the shaft. The right humerus should be connected to the torso just above the belt.', proReference: 'Matt Wolff' },
+            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'INFO', title: 'Hip clearance progressing', description: 'Hips are beginning to clear with the left knee starting to straighten. Good sequencing of the lower body leading.', correction: 'Continue to let the left shoulder go up and right shoulder go down as the body transports the arms through this zone.', proReference: 'Adam Scott' },
         ],
         'P7': [
-            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'CRITICAL', title: 'Hips not open enough', description: 'Hips showing only 30° of opening at impact vs ideal 40-45°.', correction: 'Focus on the Wall Hip Bump drill. The lower body must lead the downswing and clear aggressively through impact.', proReference: 'Tiger Woods' },
-            { id: crypto.randomUUID(), category: 'POSTURE', severity: 'WARNING', title: 'Early extension detected', description: 'Your pelvis has moved 2 inches closer to the ball compared to address.', correction: 'Maintain your tush line. Practice with your glutes against a chair and maintain contact through impact.', proReference: 'Adam Scott' }
+            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'CRITICAL', title: 'Hips not open enough', description: 'Hips showing only 30° of opening at impact vs the ideal 40-45°. This means the body hasn\'t cleared enough, forcing the arms to compensate and limiting power transfer from the ground up.', correction: 'Focus on the Wall Hip Bump drill. The lower body must lead the downswing and clear aggressively through impact. The belt buckle should be pointing left of target at impact.', proReference: 'Tiger Woods', drillIds: ['drill-1'] },
+            { id: crypto.randomUUID(), category: 'POSTURE', severity: 'WARNING', title: 'Early extension detected', description: 'Your pelvis has moved approximately 2 inches closer to the ball compared to address. This pushes the hands outward and is a common power leak.', correction: 'Maintain your tush line throughout the swing. Practice with your glutes against a chair and maintain contact through impact. This is one of the most common amateur faults.', proReference: 'Adam Scott', drillIds: ['drill-3'] },
+            { id: crypto.randomUUID(), category: 'CLUB_PATH', severity: 'TIP', title: 'Hands slightly ahead', description: 'Good shaft lean at impact with approximately 12° of forward press. Hands are leading the club head which promotes solid contact.', correction: 'This is positive. The right elbow should still be slightly flexed at impact, and the wrist uncock should happen through parametric acceleration, not arm thrust.', proReference: 'Brooks Koepka' },
         ],
         'P8': [
-            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'INFO', title: 'Good extension through the ball', description: 'Arms are extending well through the release.', correction: 'Continue focusing on full extension. Feel like you\'re throwing the club head at the target.', proReference: 'Ernie Els' },
+            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'INFO', title: 'Good extension through the ball', description: 'Arms are extending fully through the release with the left shoulder moving up and back. Both arms are at full extension creating maximum width through the hitting zone.', correction: 'Continue focusing on full extension. Feel like you\'re throwing the club head at the target. The left ear should be behind where the ball sat.', proReference: 'Ernie Els' },
+            { id: crypto.randomUUID(), category: 'BALANCE', severity: 'TIP', title: 'Spine tilt maintained', description: 'Your spine tilt from impact is being maintained well through the release. The right shoulder is moving down and forward correctly.', correction: 'The right foot should only have its heel lifted slightly off the ground at this point. Full toe-up comes later.', proReference: 'Rory McIlroy' },
         ],
         'P9': [
-            { id: crypto.randomUUID(), category: 'BALANCE', severity: 'TIP', title: 'Body rotating well post-impact', description: 'Good continuation of rotation through the ball.', correction: 'Ensure the right shoulder continues to rotate under the chin.', proReference: 'Ben Hogan' },
+            { id: crypto.randomUUID(), category: 'BALANCE', severity: 'TIP', title: 'Body rotating well post-impact', description: 'Good continuation of rotation through the ball with the body continuing to turn. The belt buckle is approaching the target.', correction: 'Ensure the right shoulder continues to rotate under the chin. The right arm should be parallel to the ground and fully extended.', proReference: 'Ben Hogan' },
+            { id: crypto.randomUUID(), category: 'ROTATION', severity: 'INFO', title: 'Release pattern matches swing type', description: 'Your P8 and P9 alignments suggest a swinging method with simultaneous arm and body rotation. This is efficient and repeatable.', correction: 'Maintain this pattern. Hitters will see distinct P8 and P9, while swingers merge them. Your pattern is consistent with your swing style.', proReference: 'Mac O\'Grady' },
         ],
         'P10': [
-            { id: crypto.randomUUID(), category: 'BALANCE', severity: 'INFO', title: 'Balanced finish', description: 'You\'re holding a balanced finish which shows good tempo and control.', correction: 'Hold this finish for a full 3-count after every swing, even in practice.', proReference: 'Gary Player' },
+            { id: crypto.randomUUID(), category: 'BALANCE', severity: 'INFO', title: 'Balanced finish', description: 'Excellent balanced finish with belt buckle facing the target. Weight is on the outside edge of the left foot with the right foot on its toe. Hips are level and thighs are sealed.', correction: 'Hold this finish for a full 3-count after every swing, even in practice. A balanced finish is the best indicator of a well-sequenced swing.', proReference: 'Gary Player' },
+            { id: crypto.randomUUID(), category: 'POSTURE', severity: 'INFO', title: 'Proper finish posture', description: 'Left shoulder is well behind where the ball sat, right ear is lower than left ear, and left elbow is below the left shoulder. This textbook finish demonstrates good sequencing throughout.', correction: 'This finish position tells us the swing was properly sequenced. The only check: make sure you can hold this for 3 full seconds without wobbling.', proReference: 'Tiger Woods' },
         ]
     };
 
     return feedbackPool[positionId] || [];
+}
+
+// ============================================================
+// SWING COMPARISON UTILITIES
+// ============================================================
+
+/**
+ * Compare two swing analyses and return position-by-position delta
+ */
+export function compareSwings(
+    swingA: FullSwingAnalysis,
+    swingB: FullSwingAnalysis
+): {
+    overallScoreDelta: number;
+    positionDeltas: { positionId: SwingPositionId; gradeA: string; gradeB: string; angleDiffs: { name: string; deltaValue: number; improved: boolean }[] }[];
+    improvements: string[];
+    regressions: string[];
+} {
+    const overallScoreDelta = swingB.overallScore - swingA.overallScore;
+    const improvements: string[] = [];
+    const regressions: string[] = [];
+
+    const gradeRank = (g: string) => ({ 'A': 5, 'B': 4, 'C': 3, 'D': 2, 'F': 1 }[g] || 0);
+
+    const positionDeltas = swingA.positions.map(posA => {
+        const posB = swingB.positions.find(p => p.positionId === posA.positionId);
+        if (!posB) return { positionId: posA.positionId, gradeA: posA.overallGrade, gradeB: '-', angleDiffs: [] };
+
+        const angleDiffs = posA.angles.map(angleA => {
+            const angleB = posB.angles.find(a => a.name === angleA.name);
+            if (!angleB) return { name: angleA.name, deltaValue: 0, improved: false };
+
+            const diffA = Math.abs(angleA.value - angleA.idealValue);
+            const diffB = Math.abs(angleB.value - angleB.idealValue);
+            return {
+                name: angleA.name,
+                deltaValue: Math.round((angleB.value - angleA.value) * 10) / 10,
+                improved: diffB < diffA,
+            };
+        });
+
+        if (gradeRank(posB.overallGrade) > gradeRank(posA.overallGrade)) {
+            improvements.push(`${posA.positionId} improved from ${posA.overallGrade} to ${posB.overallGrade}`);
+        } else if (gradeRank(posB.overallGrade) < gradeRank(posA.overallGrade)) {
+            regressions.push(`${posA.positionId} regressed from ${posA.overallGrade} to ${posB.overallGrade}`);
+        }
+
+        return { positionId: posA.positionId, gradeA: posA.overallGrade, gradeB: posB.overallGrade, angleDiffs };
+    });
+
+    return { overallScoreDelta, positionDeltas, improvements, regressions };
+}
+
+/**
+ * Generate a practice plan from analysis weaknesses
+ */
+export function generatePracticePlan(analysis: FullSwingAnalysis): {
+    focusAreas: { position: SwingPositionId; grade: string; priority: 'HIGH' | 'MEDIUM' | 'LOW' }[];
+    weeklyPlan: { day: string; focus: string; drills: string[]; duration: string }[];
+    estimatedTimeToImprove: string;
+} {
+    const weakPositions = analysis.positions
+        .filter(p => p.overallGrade === 'C' || p.overallGrade === 'D' || p.overallGrade === 'F')
+        .sort((a, b) => {
+            const rank = (g: string) => ({ 'F': 5, 'D': 4, 'C': 3 }[g] || 0);
+            return rank(b.overallGrade) - rank(a.overallGrade);
+        });
+
+    const focusAreas = weakPositions.map((p, i) => ({
+        position: p.positionId,
+        grade: p.overallGrade,
+        priority: (i === 0 ? 'HIGH' : i === 1 ? 'MEDIUM' : 'LOW') as 'HIGH' | 'MEDIUM' | 'LOW',
+    }));
+
+    const drillNames = analysis.drills.map(d => d.name);
+
+    const weeklyPlan = [
+        { day: 'Monday', focus: 'Impact & Rotation (P5-P7)', drills: drillNames.slice(0, 2), duration: '30 min' },
+        { day: 'Tuesday', focus: 'Short Game Practice', drills: ['Chipping ladder', 'Putting clock drill'], duration: '45 min' },
+        { day: 'Wednesday', focus: 'Backswing Positions (P2-P4)', drills: drillNames.slice(0, 1), duration: '30 min' },
+        { day: 'Thursday', focus: 'Rest / Mental Game', drills: ['Visualization', 'Course management review'], duration: '15 min' },
+        { day: 'Friday', focus: 'Full Swing Integration', drills: drillNames, duration: '45 min' },
+        { day: 'Saturday', focus: 'On-Course Application', drills: ['9-hole practice round with focus drills'], duration: '2 hours' },
+        { day: 'Sunday', focus: 'Video Review & Progress Check', drills: ['Record new swing for comparison'], duration: '20 min' },
+    ];
+
+    const criticalCount = analysis.positions.filter(p => p.overallGrade === 'D' || p.overallGrade === 'F').length;
+    const estimatedTimeToImprove = criticalCount > 3
+        ? '6-8 weeks of focused practice'
+        : criticalCount > 1
+        ? '3-4 weeks of focused practice'
+        : '1-2 weeks of focused practice';
+
+    return { focusAreas, weeklyPlan, estimatedTimeToImprove };
+}
+
+/**
+ * Get ideal skeleton for a position (for overlay comparison)
+ */
+export function getIdealSkeleton(positionId: SwingPositionId): SkeletonJointData[] {
+    const template = POSITION_SKELETONS[positionId];
+    if (!template) return [];
+
+    return Object.entries(template).map(([joint, pos]) => ({
+        joint: joint as SkeletonJoint,
+        x: pos.x,
+        y: pos.y,
+        confidence: 1.0,
+        visible: true
+    }));
+}
+
+/**
+ * Calculate the overall deviation of a skeleton from ideal
+ */
+export function calculateSkeletonDeviation(
+    actual: SkeletonJointData[],
+    positionId: SwingPositionId
+): { totalDeviation: number; worstJoint: string; worstDeviation: number } {
+    const ideal = getIdealSkeleton(positionId);
+    let totalDev = 0;
+    let worstJoint = '';
+    let worstDev = 0;
+
+    actual.forEach(joint => {
+        const idealJoint = ideal.find(j => j.joint === joint.joint);
+        if (!idealJoint) return;
+        const dx = joint.x - idealJoint.x;
+        const dy = joint.y - idealJoint.y;
+        const dev = Math.sqrt(dx * dx + dy * dy);
+        totalDev += dev;
+        if (dev > worstDev) {
+            worstDev = dev;
+            worstJoint = joint.joint;
+        }
+    });
+
+    return {
+        totalDeviation: Math.round(totalDev * 1000) / 1000,
+        worstJoint,
+        worstDeviation: Math.round(worstDev * 1000) / 1000,
+    };
+}
+
+/**
+ * Draw ideal skeleton ghost overlay for comparison
+ */
+export function drawIdealSkeletonGhost(
+    ctx: CanvasRenderingContext2D,
+    positionId: SwingPositionId,
+    canvasWidth: number,
+    canvasHeight: number,
+    options: { opacity?: number; color?: string } = {}
+) {
+    const { opacity = 0.3, color = '#00FF88' } = options;
+    const idealJoints = getIdealSkeleton(positionId);
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.setLineDash([4, 4]);
+
+    // Draw connections
+    SKELETON_CONNECTIONS.forEach(conn => {
+        const from = idealJoints.find(j => j.joint === conn.from);
+        const to = idealJoints.find(j => j.joint === conn.to);
+        if (!from || !to) return;
+
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.moveTo(from.x * canvasWidth, from.y * canvasHeight);
+        ctx.lineTo(to.x * canvasWidth, to.y * canvasHeight);
+        ctx.stroke();
+    });
+
+    // Draw joints
+    idealJoints.forEach(joint => {
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        ctx.arc(joint.x * canvasWidth, joint.y * canvasHeight, 3, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+
+    ctx.restore();
 }

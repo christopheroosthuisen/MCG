@@ -36,6 +36,10 @@ const Icons = {
     Split: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>,
     Share: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>,
     ChevronLeft: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"></polyline></svg>,
+    Undo: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>,
+    Repeat: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>,
+    ZoomIn: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>,
+    ZoomOut: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>,
 };
 
 // --- DRAWING CANVAS ---
@@ -278,6 +282,20 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
     const [showSkeletonOverlay, setShowSkeletonOverlay] = useState(false);
     const skeletonCanvasRef = useRef<HTMLCanvasElement>(null);
 
+    // Undo history
+    const [annotationHistory, setAnnotationHistory] = useState<ExtendedAnnotation[][]>([]);
+
+    // Loop between positions
+    const [loopRange, setLoopRange] = useState<{ start: number; end: number } | null>(null);
+
+    // Touch scrubbing
+    const [isTouchScrubbing, setIsTouchScrubbing] = useState(false);
+    const touchScrubRef = useRef<{ startX: number; startTime: number }>({ startX: 0, startTime: 0 });
+
+    // Zoom
+    const [zoomLevel, setZoomLevel] = useState(1);
+    const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+
     // Sync video time
     useEffect(() => {
         const vid = videoRef.current;
@@ -368,6 +386,84 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
         handleSeek(pos * duration);
     }, [duration, handleSeek]);
 
+    // Touch scrubbing on the video area
+    const handleVideoTouchStart = useCallback((e: React.TouchEvent) => {
+        if (activeTool) return; // don't interfere with drawing
+        touchScrubRef.current = { startX: e.touches[0].clientX, startTime: currentTime };
+        setIsTouchScrubbing(true);
+        setIsPlaying(false);
+    }, [activeTool, currentTime]);
+
+    const handleVideoTouchMove = useCallback((e: React.TouchEvent) => {
+        if (!isTouchScrubbing || activeTool) return;
+        const dx = e.touches[0].clientX - touchScrubRef.current.startX;
+        const sensitivity = duration / (containerDims.width * 2); // half screen = full duration
+        const newTime = Math.max(0, Math.min(duration, touchScrubRef.current.startTime + dx * sensitivity));
+        handleSeek(newTime);
+    }, [isTouchScrubbing, activeTool, duration, containerDims.width, handleSeek]);
+
+    const handleVideoTouchEnd = useCallback(() => {
+        setIsTouchScrubbing(false);
+    }, []);
+
+    // Loop enforcement
+    useEffect(() => {
+        if (!loopRange || !videoRef.current) return;
+        const vid = videoRef.current;
+        const checkLoop = () => {
+            if (vid.currentTime >= loopRange.end) {
+                vid.currentTime = loopRange.start;
+            }
+        };
+        vid.addEventListener('timeupdate', checkLoop);
+        return () => vid.removeEventListener('timeupdate', checkLoop);
+    }, [loopRange]);
+
+    // Loop between two positions
+    const toggleLoopBetweenPositions = useCallback((posA: SwingPositionId, posB: SwingPositionId) => {
+        if (loopRange) {
+            setLoopRange(null);
+            return;
+        }
+        const pA = analysis.positions.find(p => p.positionId === posA);
+        const pB = analysis.positions.find(p => p.positionId === posB);
+        if (pA && pB) {
+            const start = Math.min(pA.timestamp, pB.timestamp);
+            const end = Math.max(pA.timestamp, pB.timestamp);
+            setLoopRange({ start, end });
+            handleSeek(start);
+            setIsPlaying(true);
+        }
+    }, [loopRange, analysis.positions, handleSeek]);
+
+    // Undo annotation
+    const handleUndo = useCallback(() => {
+        if (annotations.length === 0) return;
+        setAnnotationHistory(prev => [...prev, annotations]);
+        setAnnotations(prev => prev.slice(0, -1));
+    }, [annotations]);
+
+    // Redo annotation
+    const handleRedo = useCallback(() => {
+        if (annotationHistory.length === 0) return;
+        const lastState = annotationHistory[annotationHistory.length - 1];
+        setAnnotations(lastState);
+        setAnnotationHistory(prev => prev.slice(0, -1));
+    }, [annotationHistory]);
+
+    // Zoom controls
+    const handleZoomIn = useCallback(() => {
+        setZoomLevel(prev => Math.min(prev + 0.5, 4));
+    }, []);
+
+    const handleZoomOut = useCallback(() => {
+        setZoomLevel(prev => {
+            const next = Math.max(prev - 0.5, 1);
+            if (next === 1) setPanOffset({ x: 0, y: 0 });
+            return next;
+        });
+    }, []);
+
     // Recording
     const toggleRecording = async () => {
         if (isRecording) {
@@ -436,16 +532,50 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
             </div>
 
             {/* Video Area */}
-            <div ref={containerRef} className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
+            <div
+                ref={containerRef}
+                className="flex-1 relative bg-black flex items-center justify-center overflow-hidden"
+                onTouchStart={handleVideoTouchStart}
+                onTouchMove={handleVideoTouchMove}
+                onTouchEnd={handleVideoTouchEnd}
+            >
                 <video
                     ref={videoRef}
                     src={analysis.videoUrl}
-                    className="max-h-full max-w-full"
+                    className="max-h-full max-w-full transition-transform duration-100"
+                    style={{
+                        transform: `scale(${zoomLevel}) translate(${panOffset.x}px, ${panOffset.y}px)`,
+                    }}
                     playsInline
-                    loop
+                    loop={!loopRange}
                     muted={isMuted}
                     poster={analysis.thumbnailUrl}
                 />
+
+                {/* Zoom level indicator */}
+                {zoomLevel > 1 && (
+                    <div className="absolute bottom-3 left-3 z-30 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-lg">
+                        <span className="text-[10px] font-bold text-orange-400">{zoomLevel.toFixed(1)}x zoom</span>
+                    </div>
+                )}
+
+                {/* Touch scrub indicator */}
+                {isTouchScrubbing && (
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl">
+                        <span className="text-lg font-mono font-black text-orange-400 tabular-nums">{formatTime(currentTime)}</span>
+                    </div>
+                )}
+
+                {/* Loop range indicator */}
+                {loopRange && (
+                    <div className="absolute top-3 right-14 z-20 bg-purple-500/80 backdrop-blur-sm px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                        <Icons.Repeat />
+                        <span className="text-[9px] font-bold text-white">Loop Active</span>
+                        <button onClick={() => setLoopRange(null)} className="ml-1 text-white/70 hover:text-white">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                )}
 
                 {/* Skeleton overlay canvas */}
                 {showSkeletonOverlay && (
@@ -548,21 +678,38 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                     </div>
                 </div>
 
-                {/* Position quick-jump row */}
-                <div className="flex gap-1 px-2 py-1 overflow-x-auto hide-scrollbar">
-                    {analysis.positions.map(pos => (
-                        <button
-                            key={pos.positionId}
-                            onClick={() => handleSeek(pos.timestamp)}
-                            className={`flex-shrink-0 px-2 py-1 rounded-lg text-[9px] font-bold transition-all ${
-                                nearestPosition?.positionId === pos.positionId && Math.abs(nearestPosition.timestamp - currentTime) < 0.3
-                                    ? 'bg-orange-500 text-white'
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
-                            }`}
-                        >
-                            {pos.positionId}
-                        </button>
-                    ))}
+                {/* Position quick-jump row with loop controls */}
+                <div className="flex gap-1 px-2 py-1 overflow-x-auto hide-scrollbar items-center">
+                    {analysis.positions.map((pos, idx) => {
+                        const isActive = nearestPosition?.positionId === pos.positionId && Math.abs(nearestPosition.timestamp - currentTime) < 0.3;
+                        const isInLoop = loopRange && pos.timestamp >= loopRange.start && pos.timestamp <= loopRange.end;
+                        return (
+                            <button
+                                key={pos.positionId}
+                                onClick={() => handleSeek(pos.timestamp)}
+                                onDoubleClick={() => {
+                                    // Double-click: loop from this position to next
+                                    const nextPos = analysis.positions[idx + 1];
+                                    if (nextPos) {
+                                        toggleLoopBetweenPositions(pos.positionId, nextPos.positionId);
+                                    }
+                                }}
+                                className={`flex-shrink-0 px-2 py-1 rounded-lg text-[9px] font-bold transition-all ${
+                                    isActive
+                                        ? 'bg-orange-500 text-white'
+                                        : isInLoop
+                                        ? 'bg-purple-500/30 text-purple-300 border border-purple-500/50'
+                                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                                }`}
+                            >
+                                {pos.positionId}
+                            </button>
+                        );
+                    })}
+                    {/* Loop toggle indicator */}
+                    <div className="flex-shrink-0 ml-1 text-[7px] text-gray-600">
+                        dbl-tap = loop
+                    </div>
                 </div>
 
                 {/* Transport Controls */}
@@ -601,7 +748,22 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                     </div>
 
                     {/* Utility buttons */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5 items-center">
+                        <button
+                            onClick={handleZoomIn}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-white transition-all"
+                            title="Zoom in"
+                        >
+                            <Icons.ZoomIn />
+                        </button>
+                        <button
+                            onClick={handleZoomOut}
+                            className={`p-1.5 rounded-lg transition-all ${zoomLevel > 1 ? 'text-orange-400' : 'text-gray-600'}`}
+                            title="Zoom out"
+                        >
+                            <Icons.ZoomOut />
+                        </button>
+                        <div className="w-px h-5 bg-gray-700" />
                         <button
                             onClick={() => setShowSkeletonOverlay(!showSkeletonOverlay)}
                             className={`p-1.5 rounded-lg text-[10px] transition-all ${
@@ -662,13 +824,22 @@ export const EnhancedVideoPlayer: React.FC<EnhancedVideoPlayerProps> = ({
                         ))}
                     </div>
 
-                    {/* Clear button */}
-                    <button
-                        onClick={() => setAnnotations([])}
-                        className="px-3 py-2 rounded-xl bg-gray-800 text-red-400 hover:bg-gray-700 text-[10px] font-bold"
-                    >
-                        Clear
-                    </button>
+                    {/* Undo/Redo/Clear */}
+                    <div className="flex gap-1 items-center">
+                        <button
+                            onClick={handleUndo}
+                            className={`p-2 rounded-lg transition-all ${annotations.length > 0 ? 'text-white hover:bg-gray-700' : 'text-gray-700'}`}
+                            title="Undo"
+                        >
+                            <Icons.Undo />
+                        </button>
+                        <button
+                            onClick={() => setAnnotations([])}
+                            className="px-2.5 py-1.5 rounded-xl bg-gray-800 text-red-400 hover:bg-gray-700 text-[10px] font-bold"
+                        >
+                            Clear
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
