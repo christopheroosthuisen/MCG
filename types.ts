@@ -835,5 +835,234 @@ export interface CaddieTip {
   icon: string;
 }
 
+// ==========================================
+// P1-P10 SWING POSITION ANALYSIS TYPES
+// ==========================================
+
+export type SwingPositionId = 'P1' | 'P2' | 'P3' | 'P4' | 'P5' | 'P6' | 'P7' | 'P8' | 'P9' | 'P10';
+
+export interface SwingPositionDefinition {
+    id: SwingPositionId;
+    name: string;
+    fullName: string;
+    description: string;
+    checkpoints: string[];
+    idealAngles: { name: string; min: number; max: number; ideal: number }[];
+}
+
+export interface DetectedPosition {
+    positionId: SwingPositionId;
+    frameNumber: number;
+    timestamp: number;
+    confidence: number;
+    screenshotDataUrl: string;
+    skeletonData: SkeletonJointData[];
+    angles: MeasuredAngle[];
+    coaching: PositionCoachingFeedback[];
+    overallGrade: 'A' | 'B' | 'C' | 'D' | 'F';
+}
+
+export interface SkeletonJointData {
+    joint: SkeletonJoint;
+    x: number;
+    y: number;
+    z?: number;
+    confidence: number;
+    visible: boolean;
+}
+
+export type SkeletonJoint =
+    | 'HEAD' | 'NECK'
+    | 'LEFT_SHOULDER' | 'RIGHT_SHOULDER'
+    | 'LEFT_ELBOW' | 'RIGHT_ELBOW'
+    | 'LEFT_WRIST' | 'RIGHT_WRIST'
+    | 'LEFT_HIP' | 'RIGHT_HIP'
+    | 'LEFT_KNEE' | 'RIGHT_KNEE'
+    | 'LEFT_ANKLE' | 'RIGHT_ANKLE'
+    | 'SPINE_MID' | 'SPINE_BASE'
+    | 'LEFT_HAND' | 'RIGHT_HAND'
+    | 'CLUB_GRIP' | 'CLUB_SHAFT_MID' | 'CLUB_HEAD';
+
+export interface SkeletonConnection {
+    from: SkeletonJoint;
+    to: SkeletonJoint;
+    color?: string;
+}
+
+export interface MeasuredAngle {
+    name: string;
+    value: number;
+    idealMin: number;
+    idealMax: number;
+    idealValue: number;
+    status: 'EXCELLENT' | 'GOOD' | 'NEEDS_WORK' | 'CRITICAL';
+    jointA: SkeletonJoint;
+    jointB: SkeletonJoint;
+    jointC: SkeletonJoint;
+}
+
+export interface PositionCoachingFeedback {
+    id: string;
+    category: 'POSTURE' | 'GRIP' | 'ALIGNMENT' | 'PLANE' | 'ROTATION' | 'WEIGHT_SHIFT' | 'WRIST' | 'HEAD' | 'BALANCE' | 'TEMPO' | 'CLUB_FACE' | 'CLUB_PATH';
+    severity: 'INFO' | 'TIP' | 'WARNING' | 'CRITICAL';
+    title: string;
+    description: string;
+    correction: string;
+    drillIds?: string[];
+    proReference?: string;
+}
+
+// ==========================================
+// VIDEO ANALYSIS PIPELINE TYPES
+// ==========================================
+
+export type AnalysisPipelineStage =
+    | 'UPLOADING'
+    | 'TRIMMING'
+    | 'DETECTING_POSITIONS'
+    | 'EXTRACTING_FRAMES'
+    | 'ANALYZING_POSE'
+    | 'MEASURING_ANGLES'
+    | 'GENERATING_FEEDBACK'
+    | 'COMPILING_REPORT'
+    | 'COMPLETE'
+    | 'ERROR';
+
+export interface AnalysisPipelineState {
+    stage: AnalysisPipelineStage;
+    progress: number;
+    stageProgress: number;
+    message: string;
+    startedAt: Date;
+    completedAt?: Date;
+    error?: string;
+}
+
+export interface VideoTrimResult {
+    originalDuration: number;
+    trimmedStartTime: number;
+    trimmedEndTime: number;
+    trimmedDuration: number;
+    swingDetected: boolean;
+    confidence: number;
+}
+
+export interface FullSwingAnalysis {
+    id: string;
+    videoUrl: string;
+    thumbnailUrl: string;
+    date: Date;
+    clubUsed: string;
+    shotType: string;
+    cameraAngle: 'FACE_ON' | 'DOWN_THE_LINE' | 'REAR' | 'OTHER';
+    executionLevel: 1 | 2 | 3 | 4 | 5;
+    trimResult: VideoTrimResult;
+    positions: DetectedPosition[];
+    overallScore: number;
+    overallGrade: 'A' | 'B' | 'C' | 'D' | 'F';
+    strengths: string[];
+    weaknesses: string[];
+    recommendations: CoachingRecommendation[];
+    drills: RecommendedDrill[];
+    tags: string[];
+    notes?: string;
+    coachNotes?: string;
+    audioFeedbackUrl?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface CoachingRecommendation {
+    id: string;
+    priority: 'HIGH' | 'MEDIUM' | 'LOW';
+    category: string;
+    title: string;
+    description: string;
+    positionRefs: SwingPositionId[];
+    drillIds: string[];
+    estimatedImpact: string;
+}
+
+export interface RecommendedDrill {
+    id: string;
+    name: string;
+    description: string;
+    category: string;
+    difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+    duration: string;
+    videoUrl?: string;
+    thumbnailUrl?: string;
+    steps: string[];
+    targetPositions: SwingPositionId[];
+    expectedImprovement: string;
+}
+
+// ==========================================
+// ANNOTATION & DRAWING TYPES (EXTENDED)
+// ==========================================
+
+export type ExtendedToolType = 'POINTER' | 'LINE' | 'ANGLE' | 'CIRCLE' | 'RECT' | 'FREEHAND' | 'SKELETON' | 'ARROW' | 'TEXT' | 'MEASUREMENT' | 'SPOTLIGHT';
+
+export interface ExtendedAnnotation {
+    id: string;
+    type: ExtendedToolType;
+    points: Point[];
+    color: string;
+    strokeWidth: number;
+    text?: string;
+    fontSize?: number;
+    frameTimestamp?: number;
+    positionId?: SwingPositionId;
+    locked: boolean;
+    visible: boolean;
+    label?: string;
+}
+
+// ==========================================
+// RECORDING & SHARING TYPES
+// ==========================================
+
+export interface AnalysisRecording {
+    id: string;
+    analysisId: string;
+    videoUrl: string;
+    audioUrl: string;
+    duration: number;
+    createdBy: string;
+    createdAt: Date;
+    isAINarrated: boolean;
+    thumbnailUrl: string;
+}
+
+export interface AnalysisShare {
+    id: string;
+    analysisId: string;
+    sharedBy: string;
+    sharedWith: string[];
+    shareType: 'LINK' | 'COACH' | 'SOCIAL' | 'EXPORT';
+    shareUrl?: string;
+    permissions: 'VIEW' | 'ANNOTATE' | 'FULL';
+    createdAt: Date;
+    expiresAt?: Date;
+}
+
+// ==========================================
+// LIVE SESSION TYPES
+// ==========================================
+
+export type LiveSessionMode = 'CAPTURE' | 'REVIEW' | 'COACHING';
+
+export interface LiveSession {
+    id: string;
+    mode: LiveSessionMode;
+    startedAt: Date;
+    endedAt?: Date;
+    swingsCaptures: FullSwingAnalysis[];
+    isRecording: boolean;
+    autoAnalyze: boolean;
+    clubPreset?: string;
+    cameraAngle: 'FACE_ON' | 'DOWN_THE_LINE' | 'REAR' | 'OTHER';
+}
+
 // App State Types
 export type Tab = 'HOME' | 'PRACTICE' | 'ANALYZE' | 'LEARN' | 'PROFILE' | 'SOCIAL';

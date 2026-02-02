@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Tab } from './types';
 import { Text, Button, Card, Badge, Input, ProgressBar, QuickAction } from './components/UIComponents';
-import { VideoRecorder, AnalysisResult, AnalyzeView } from './components/AnalysisViews';
+import { VideoRecorder, AnalysisResult, AnalyzeView, FullAnalysisResult, SwingAnalysisPipeline, LiveSessionView } from './components/AnalysisViews';
+import { FullSwingAnalysis } from './types';
 import { LearnSystem } from './components/LearnViews';
 import { PracticeSystem } from './components/PracticeViews';
 import { TempoTool } from './components/TempoTool';
@@ -72,6 +73,9 @@ const App: React.FC = () => {
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [isLiveSession, setIsLiveSession] = useState(false);
+    const [pipelineData, setPipelineData] = useState<{ videoUrl: string; thumbUrl: string; club: string; angle: string } | null>(null);
+    const [fullAnalysis, setFullAnalysis] = useState<FullSwingAnalysis | null>(null);
 
     // Get real user data
     const user = db.getUser();
@@ -119,9 +123,47 @@ const App: React.FC = () => {
     }
 
     if (isRecording) {
-        return <VideoRecorder onAnalysisComplete={(res) => { setIsRecording(false); setSubScreen({ type: 'ANALYSIS_RESULT', id: res.id }); }} onCancel={() => setIsRecording(false)} />;
+        return <VideoRecorder onComplete={(videoUrl: string, thumbUrl: string) => { setIsRecording(false); }} onCancel={() => setIsRecording(false)} />;
     }
-    
+
+    if (pipelineData) {
+        return (
+            <SwingAnalysisPipeline
+                videoUrl={pipelineData.videoUrl}
+                thumbnailUrl={pipelineData.thumbUrl}
+                clubUsed={pipelineData.club}
+                cameraAngle={pipelineData.angle as any}
+                useMockData={true}
+                onComplete={(analysis: FullSwingAnalysis) => {
+                    setPipelineData(null);
+                    setFullAnalysis(analysis);
+                }}
+                onCancel={() => setPipelineData(null)}
+            />
+        );
+    }
+
+    if (fullAnalysis) {
+        return (
+            <FullAnalysisResult
+                analysis={fullAnalysis}
+                onBack={() => setFullAnalysis(null)}
+            />
+        );
+    }
+
+    if (isLiveSession) {
+        return (
+            <LiveSessionView
+                onBack={() => setIsLiveSession(false)}
+                onAnalysisComplete={(analysis: FullSwingAnalysis) => {
+                    setIsLiveSession(false);
+                    setFullAnalysis(analysis);
+                }}
+            />
+        );
+    }
+
     if (showNotifications) {
         return <NotificationsView onBack={() => setShowNotifications(false)} />;
     }
@@ -249,14 +291,14 @@ const App: React.FC = () => {
                                     </div>
                                 </Card>
 
-                                <Card className="p-4 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all border-gray-100 cursor-pointer" onClick={() => setIsRecording(true)}>
+                                <Card className="p-4 flex flex-col justify-between h-36 relative overflow-hidden group hover:shadow-md transition-all border-gray-100 cursor-pointer" onClick={() => { setCurrentTab('ANALYZE'); setAnalyzeTab('VIDEO'); }}>
                                     <div className="absolute right-[-20px] top-[-20px] bg-blue-50 w-24 h-24 rounded-full opacity-50 transition-transform group-hover:scale-110"></div>
                                     <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-2">
                                         <Icons.Camera />
                                     </div>
                                     <div>
-                                        <Text variant="h4" className="text-base font-bold">Record Swing</Text>
-                                        <Text variant="caption" className="text-xs">AI Analysis</Text>
+                                        <Text variant="h4" className="text-base font-bold">Analyze Swing</Text>
+                                        <Text variant="caption" className="text-xs">AI P1-P10 Analysis</Text>
                                     </div>
                                 </Card>
                             </div>
@@ -300,7 +342,7 @@ const App: React.FC = () => {
                             </div>
                             
                             <div className="flex-1 pt-4">
-                                {analyzeTab === 'VIDEO' && <SwingLibrary onRecord={() => setIsRecording(true)} />}
+                                {analyzeTab === 'VIDEO' && <SwingLibrary onRecord={() => setIsRecording(true)} onStartPipeline={(videoUrl: string, thumbUrl: string, club: string, angle: string) => setPipelineData({ videoUrl, thumbUrl, club, angle })} onStartLiveSession={() => setIsLiveSession(true)} />}
                                 {analyzeTab === 'SG' && <StrokesGainedDashboard />}
                                 {analyzeTab === 'STATS' && <StatisticsHub />}
                                 {analyzeTab === 'REPLAY' && <RoundReplayHub onBack={() => setAnalyzeTab('VIDEO')} />}

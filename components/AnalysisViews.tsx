@@ -2,9 +2,14 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Button, Text, Card, Badge, ProgressBar } from './UIComponents';
 import { COLORS } from '../constants';
-import { AnalysisStatus, FeedbackMessage, Keyframe, PlaybackSpeed, ToolType, SwingAnalysis, SkeletonConfig, DrawnAnnotation, Point } from '../types';
+import { AnalysisStatus, FeedbackMessage, Keyframe, PlaybackSpeed, ToolType, SwingAnalysis, SkeletonConfig, DrawnAnnotation, Point, FullSwingAnalysis, SwingPositionId } from '../types';
 import { analyzeSwingFrame } from '../services/geminiService';
 import { db } from '../services/dataService';
+import { SwingAnalysisPipeline } from './SwingAnalysisPipeline';
+import { PositionAnalysisView } from './PositionAnalysisView';
+import { EnhancedVideoPlayer } from './EnhancedVideoPlayer';
+import { AnalysisReportView } from './AnalysisReportView';
+import { LiveSessionView } from './LiveSessionView';
 
 // --- ICONS ---
 const Icons = {
@@ -27,7 +32,11 @@ const Icons = {
     Trash: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
     Folder: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>,
     Cloud: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>,
-    Scissors: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+    Scissors: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>,
+    Zap: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>,
+    Video: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>,
+    ChevronRight: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"></polyline></svg>,
+    BarChart: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>,
 };
 
 // --- ANNOTATION LAYER ---
@@ -52,7 +61,6 @@ const AnnotationOverlay: React.FC<{
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        // Draw saved annotations
         annotations.forEach(ann => {
             ctx.beginPath();
             ctx.strokeStyle = ann.color;
@@ -70,7 +78,6 @@ const AnnotationOverlay: React.FC<{
             ctx.stroke();
         });
 
-        // Draw current stroke
         if (currentPoints.length > 0 && activeTool) {
             ctx.beginPath();
             ctx.strokeStyle = COLORS.primary;
@@ -153,21 +160,28 @@ const AnnotationOverlay: React.FC<{
     );
 };
 
-// --- MEDIA INGEST WIZARD ---
+// --- MEDIA INGEST WIZARD (Enhanced with club selection & pipeline routing) ---
 export const MediaCaptureWizard: React.FC<{
     onComplete: (videoUrl: string, thumbUrl: string) => void;
+    onStartPipeline?: (videoUrl: string, thumbUrl: string, club: string, angle: string) => void;
     onCancel: () => void;
-}> = ({ onComplete, onCancel }) => {
+}> = ({ onComplete, onStartPipeline, onCancel }) => {
     const [status, setStatus] = useState<AnalysisStatus>('SELECT_SOURCE');
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [selectedClub, setSelectedClub] = useState('DRIVER');
+    const [selectedAngle, setSelectedAngle] = useState('FACE_ON');
     const videoRef = useRef<HTMLVideoElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Mock Camera logic
+    const CLUBS = ['DRIVER', '3 WOOD', '5 WOOD', '4 IRON', '5 IRON', '6 IRON', '7 IRON', '8 IRON', '9 IRON', 'PW', 'SW', 'LW', 'PUTTER'];
+    const ANGLES = [
+        { id: 'FACE_ON', label: 'Face On', icon: '👤' },
+        { id: 'DOWN_THE_LINE', label: 'Down the Line', icon: '➡️' },
+        { id: 'REAR', label: 'Rear', icon: '🔄' },
+    ];
+
     const handleCameraStart = () => {
-        // In real app, trigger native camera or webRTC
-        // For web demo, defaulting to file select as camera simulation often fails in sandboxes
         fileInputRef.current?.click();
     };
 
@@ -182,15 +196,18 @@ export const MediaCaptureWizard: React.FC<{
 
     const handleConfirm = () => {
         if (previewUrl && videoRef.current) {
-            // Create a thumbnail
             const canvas = document.createElement('canvas');
             canvas.width = videoRef.current.videoWidth || 640;
             canvas.height = videoRef.current.videoHeight || 360;
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
             const thumbUrl = canvas.toDataURL('image/jpeg');
-            
-            onComplete(previewUrl, thumbUrl);
+
+            if (onStartPipeline) {
+                onStartPipeline(previewUrl, thumbUrl, selectedClub, selectedAngle);
+            } else {
+                onComplete(previewUrl, thumbUrl);
+            }
         }
     };
 
@@ -201,7 +218,7 @@ export const MediaCaptureWizard: React.FC<{
                     <Text variant="h2" color="white" className="mb-2">New Analysis</Text>
                     <Text className="text-gray-400">Choose how to import your swing</Text>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 max-w-md mx-auto w-full">
                     <button onClick={handleCameraStart} className="aspect-square bg-gray-800 rounded-3xl flex flex-col items-center justify-center gap-3 hover:bg-gray-700 transition-colors border border-gray-700">
                         <div className="w-16 h-16 rounded-full bg-orange-600 flex items-center justify-center text-3xl"><Icons.Camera /></div>
@@ -218,7 +235,7 @@ export const MediaCaptureWizard: React.FC<{
                 </div>
 
                 <input type="file" ref={fileInputRef} className="hidden" accept="video/*" onChange={handleFileSelect} />
-                
+
                 <button onClick={onCancel} className="mt-12 text-gray-500 font-bold hover:text-white">Cancel</button>
             </div>
         );
@@ -230,26 +247,72 @@ export const MediaCaptureWizard: React.FC<{
                 <div className="flex-1 relative flex items-center justify-center bg-gray-900">
                     <video ref={videoRef} src={previewUrl} controls className="max-h-full max-w-full" playsInline />
                 </div>
-                <div className="bg-[#1F2937] p-6 border-t border-gray-700 safe-area-bottom">
-                    <div className="flex justify-between items-center mb-4">
-                        <div>
-                            <Text variant="h4" color="white" className="text-sm font-bold">Trim Video</Text>
-                            <Text className="text-xs text-gray-400">Adjust start and end points</Text>
-                        </div>
-                        <Badge variant="warning" className="bg-orange-600 text-white border-none"><Icons.Scissors /> Trim</Badge>
-                    </div>
-                    {/* Mock Trimmer UI */}
-                    <div className="h-12 bg-gray-800 rounded-lg relative mb-6 border border-gray-600 overflow-hidden">
-                        <div className="absolute inset-y-0 left-0 w-4 bg-orange-500 opacity-50 cursor-ew-resize"></div>
-                        <div className="absolute inset-y-0 right-0 w-4 bg-orange-500 opacity-50 cursor-ew-resize"></div>
-                        <div className="absolute top-1/2 left-4 right-4 h-8 -translate-y-1/2 flex items-center justify-around opacity-30">
-                            {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="w-8 h-6 bg-gray-500 rounded-sm"></div>)}
+                <div className="bg-[#1F2937] p-4 border-t border-gray-700 safe-area-bottom overflow-y-auto max-h-[50vh]">
+                    {/* Club Selection */}
+                    <div className="mb-4">
+                        <Text variant="h4" color="white" className="text-xs font-bold uppercase tracking-wider mb-2 text-gray-400">Club Used</Text>
+                        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                            {CLUBS.map(club => (
+                                <button
+                                    key={club}
+                                    onClick={() => setSelectedClub(club)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                                        selectedClub === club
+                                            ? 'bg-orange-600 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                    }`}
+                                >
+                                    {club}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="flex gap-4">
+                    {/* Camera Angle Selection */}
+                    <div className="mb-4">
+                        <Text variant="h4" color="white" className="text-xs font-bold uppercase tracking-wider mb-2 text-gray-400">Camera Angle</Text>
+                        <div className="flex gap-2">
+                            {ANGLES.map(angle => (
+                                <button
+                                    key={angle.id}
+                                    onClick={() => setSelectedAngle(angle.id)}
+                                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex flex-col items-center gap-1 ${
+                                        selectedAngle === angle.id
+                                            ? 'bg-orange-600 text-white'
+                                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                    }`}
+                                >
+                                    <span className="text-lg">{angle.icon}</span>
+                                    <span>{angle.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Trim indicator */}
+                    <div className="flex justify-between items-center mb-3">
+                        <div>
+                            <Text variant="h4" color="white" className="text-sm font-bold">Smart Trim</Text>
+                            <Text className="text-[10px] text-gray-400">AI will auto-detect swing boundaries</Text>
+                        </div>
+                        <Badge variant="warning" className="bg-orange-600 text-white border-none"><Icons.Scissors /> Auto</Badge>
+                    </div>
+
+                    <div className="h-10 bg-gray-800 rounded-lg relative mb-4 border border-gray-600 overflow-hidden">
+                        <div className="absolute inset-y-0 left-0 w-4 bg-orange-500 opacity-50 cursor-ew-resize"></div>
+                        <div className="absolute inset-y-0 right-0 w-4 bg-orange-500 opacity-50 cursor-ew-resize"></div>
+                        <div className="absolute top-1/2 left-4 right-4 h-6 -translate-y-1/2 flex items-center justify-around opacity-30">
+                            {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="w-8 h-5 bg-gray-500 rounded-sm"></div>)}
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3">
                         <Button variant="ghost" fullWidth onClick={() => setStatus('SELECT_SOURCE')}>Retake</Button>
-                        <Button variant="primary" fullWidth onClick={handleConfirm}>Analyze Swing</Button>
+                        <Button variant="primary" fullWidth onClick={handleConfirm}>
+                            <span className="flex items-center justify-center gap-2">
+                                <Icons.Zap /> AI Analyze
+                            </span>
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -259,7 +322,7 @@ export const MediaCaptureWizard: React.FC<{
     return null;
 };
 
-// --- PRO VIDEO PLAYER ---
+// --- PRO VIDEO PLAYER (Legacy - kept for backward compatibility) ---
 export const ProVideoPlayer: React.FC<{
     src: string;
     isPlaying: boolean;
@@ -297,25 +360,24 @@ export const ProVideoPlayer: React.FC<{
 
     return (
         <div ref={containerRef} className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden group">
-            <video 
-                ref={videoRef} 
-                src={src} 
-                className="max-h-full max-w-full" 
-                playsInline 
-                loop 
-                muted // Muted for autoplay policy, though handled by play()
+            <video
+                ref={videoRef}
+                src={src}
+                className="max-h-full max-w-full"
+                playsInline
+                loop
+                muted
                 onLoadedMetadata={() => {
-                    // Force update dimensions once video loads
                     if (containerRef.current) {
                         setDims({ width: containerRef.current.offsetWidth, height: containerRef.current.offsetHeight });
                     }
                 }}
             />
-            
-            <AnnotationOverlay 
-                width={dims.width} 
-                height={dims.height} 
-                activeTool={activeTool} 
+
+            <AnnotationOverlay
+                width={dims.width}
+                height={dims.height}
+                activeTool={activeTool}
                 annotations={annotations}
                 onAddAnnotation={onAddAnnotation}
             />
@@ -341,8 +403,7 @@ export const TransportControls: React.FC<{
     onRateChange: (rate: number) => void;
     onFrameStep: (frames: number) => void;
 }> = ({ isPlaying, onTogglePlay, currentTime, duration, playbackRate, onSeek, onRateChange, onFrameStep }) => {
-    
-    // Format time 0:00.00
+
     const formatTime = (t: number) => {
         const s = Math.floor(t);
         const ms = Math.floor((t % 1) * 100);
@@ -351,34 +412,29 @@ export const TransportControls: React.FC<{
 
     return (
         <div className="bg-[#111827] border-t border-gray-800 p-2 safe-area-bottom">
-            {/* Scrubber */}
-            <div className="relative h-10 mb-2 group cursor-pointer" 
+            <div className="relative h-10 mb-2 group cursor-pointer"
                 onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const pos = (e.clientX - rect.left) / rect.width;
                     onSeek(pos * (duration || 1));
                 }}
             >
-                {/* Filmstrip BG Mock */}
                 <div className="absolute inset-0 flex opacity-20 overflow-hidden">
                     {Array.from({length: 20}).map((_, i) => (
                         <div key={i} className="flex-1 border-r border-gray-600 bg-gray-800"></div>
                     ))}
                 </div>
-                {/* Progress */}
                 <div className="absolute top-0 bottom-0 left-0 bg-orange-600/30 border-r-2 border-orange-500" style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}></div>
-                {/* Time Display */}
                 <div className="absolute top-1 left-2 text-[10px] font-mono font-bold text-orange-500 bg-black/50 px-1 rounded">
                     {formatTime(currentTime)}
                 </div>
             </div>
 
-            {/* Buttons */}
             <div className="flex justify-between items-center px-2">
                 <div className="flex gap-2">
                     {[0.25, 0.5, 1.0].map(rate => (
-                        <button 
-                            key={rate} 
+                        <button
+                            key={rate}
                             onClick={() => onRateChange(rate)}
                             className={`text-[10px] font-bold px-2 py-1 rounded border ${playbackRate === rate ? 'bg-orange-600 border-orange-600 text-white' : 'border-gray-700 text-gray-400 hover:text-white'}`}
                         >
@@ -389,8 +445,8 @@ export const TransportControls: React.FC<{
 
                 <div className="flex items-center gap-4">
                     <button onClick={() => onFrameStep(-1)} className="text-gray-400 hover:text-white p-2 active:scale-95"><Icons.SkipBack /></button>
-                    <button 
-                        onClick={onTogglePlay} 
+                    <button
+                        onClick={onTogglePlay}
                         className="w-10 h-10 bg-white text-black rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
                     >
                         {isPlaying ? <Icons.Pause /> : <Icons.Play />}
@@ -406,7 +462,7 @@ export const TransportControls: React.FC<{
     );
 };
 
-export const AnalysisToolbar: React.FC<{ 
+export const AnalysisToolbar: React.FC<{
     activeTool: ToolType | null;
     onSelectTool: (t: ToolType | null) => void;
     onClear: () => void;
@@ -418,14 +474,13 @@ export const AnalysisToolbar: React.FC<{
                     { id: 'LINE', icon: '📏', label: 'Line' },
                     { id: 'CIRCLE', icon: '⭕', label: 'Circle' },
                     { id: 'FREEHAND', icon: '✏️', label: 'Draw' },
-                    // { id: 'ANGLE', icon: '📐', label: 'Angle' }, // Keep simple for now
                 ].map(tool => (
-                    <button 
-                        key={tool.id} 
+                    <button
+                        key={tool.id}
                         onClick={() => onSelectTool(activeTool === tool.id ? null : tool.id as ToolType)}
                         className={`flex flex-col items-center justify-center min-w-[56px] h-14 rounded-xl transition-all ${
-                            activeTool === tool.id 
-                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/50 scale-105' 
+                            activeTool === tool.id
+                                ? 'bg-orange-500 text-white shadow-lg shadow-orange-900/50 scale-105'
                                 : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200'
                         }`}
                     >
@@ -443,12 +498,63 @@ export const AnalysisToolbar: React.FC<{
     </div>
 );
 
-// --- MAIN WRAPPER COMPONENT ---
+// --- FULL SWING ANALYSIS RESULT (Enhanced with P1-P10, Video Player, Report) ---
+type AnalysisSubView = 'VIDEO' | 'POSITIONS' | 'REPORT';
+
+export const FullAnalysisResult: React.FC<{
+    analysis: FullSwingAnalysis;
+    onBack: () => void;
+}> = ({ analysis, onBack }) => {
+    const [activeView, setActiveView] = useState<AnalysisSubView>('VIDEO');
+    const [selectedPosition, setSelectedPosition] = useState<SwingPositionId | null>(null);
+
+    if (selectedPosition && activeView === 'POSITIONS') {
+        return (
+            <PositionAnalysisView
+                positions={analysis.positions}
+                initialPositionId={selectedPosition}
+                onBack={() => setSelectedPosition(null)}
+                onPositionChange={(id) => setSelectedPosition(id)}
+            />
+        );
+    }
+
+    if (activeView === 'VIDEO') {
+        return (
+            <EnhancedVideoPlayer
+                analysis={analysis}
+                onBack={onBack}
+                onViewPosition={(posId) => {
+                    setSelectedPosition(posId);
+                    setActiveView('POSITIONS');
+                }}
+                onViewReport={() => setActiveView('REPORT')}
+            />
+        );
+    }
+
+    if (activeView === 'REPORT') {
+        return (
+            <AnalysisReportView
+                analysis={analysis}
+                onBack={() => setActiveView('VIDEO')}
+                onViewPosition={(posId) => {
+                    setSelectedPosition(posId);
+                    setActiveView('POSITIONS');
+                }}
+                onViewVideo={() => setActiveView('VIDEO')}
+            />
+        );
+    }
+
+    return null;
+};
+
+// --- LEGACY ANALYSIS RESULT (for backward compatibility with existing swings) ---
 export const AnalysisResult: React.FC<{ analysisId: string; onBack: () => void }> = ({ analysisId, onBack }) => {
     const swing = db.getSwings().find(s => s.id === analysisId) || db.getSwings()[0];
     const videoRef = useRef<HTMLVideoElement>(null);
-    
-    // State
+
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -456,14 +562,13 @@ export const AnalysisResult: React.FC<{ analysisId: string; onBack: () => void }
     const [activeTool, setActiveTool] = useState<ToolType | null>(null);
     const [annotations, setAnnotations] = useState<DrawnAnnotation[]>(swing.annotations || []);
 
-    // Sync Time
     useEffect(() => {
         const vid = videoRef.current;
         if (!vid) return;
 
         const updateTime = () => setCurrentTime(vid.currentTime);
         const updateDur = () => setDuration(vid.duration);
-        
+
         vid.addEventListener('timeupdate', updateTime);
         vid.addEventListener('loadedmetadata', updateDur);
         return () => {
@@ -480,19 +585,17 @@ export const AnalysisResult: React.FC<{ analysisId: string; onBack: () => void }
     };
 
     const handleFrameStep = (frames: number) => {
-        // Approx 30fps
         const step = 1/30;
         handleSeek(Math.min(Math.max(0, currentTime + (frames * step)), duration));
     };
 
     const handleAddAnnotation = (ann: DrawnAnnotation) => {
         setAnnotations(prev => [...prev, ann]);
-        setActiveTool(null); // Deselect after drawing
+        setActiveTool(null);
     };
 
     return (
         <div className="flex flex-col h-full bg-black text-white fixed inset-0 z-50 animate-in slide-in-from-right duration-300">
-             {/* Header */}
              <div className="flex items-center justify-between p-3 bg-[#111827] border-b border-gray-800 safe-area-top">
                 <button onClick={onBack} className="p-2 text-gray-400 hover:text-white flex items-center gap-1">
                     <Icons.SkipBack /> Back
@@ -504,11 +607,10 @@ export const AnalysisResult: React.FC<{ analysisId: string; onBack: () => void }
                 <button className="p-2 text-orange-500 font-bold text-xs bg-orange-500/10 rounded-lg">Export</button>
              </div>
 
-             {/* Player Area */}
              <div className="flex-1 relative bg-black flex items-center justify-center">
-                <ProVideoPlayer 
-                    src={swing.videoUrl || "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"} // Fallback for dev
-                    isPlaying={isPlaying} 
+                <ProVideoPlayer
+                    src={swing.videoUrl || "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
+                    isPlaying={isPlaying}
                     playbackRate={playbackRate}
                     activeTool={activeTool}
                     annotations={annotations}
@@ -518,10 +620,9 @@ export const AnalysisResult: React.FC<{ analysisId: string; onBack: () => void }
                 />
              </div>
 
-             {/* Controls */}
-             <TransportControls 
-                isPlaying={isPlaying} 
-                onTogglePlay={() => setIsPlaying(!isPlaying)} 
+             <TransportControls
+                isPlaying={isPlaying}
+                onTogglePlay={() => setIsPlaying(!isPlaying)}
                 currentTime={currentTime}
                 duration={duration}
                 playbackRate={playbackRate}
@@ -530,24 +631,26 @@ export const AnalysisResult: React.FC<{ analysisId: string; onBack: () => void }
                 onFrameStep={handleFrameStep}
              />
 
-             {/* Tools */}
-             <AnalysisToolbar 
-                activeTool={activeTool} 
+             <AnalysisToolbar
+                activeTool={activeTool}
                 onSelectTool={(t) => {
-                    setIsPlaying(false); // Pause when drawing
+                    setIsPlaying(false);
                     setActiveTool(t);
-                }} 
+                }}
                 onClear={() => setAnnotations([])}
             />
         </div>
     );
 };
 
+// --- MAIN ANALYZE VIEW (Enhanced with pipeline & live session integration) ---
 export const AnalyzeView: React.FC<{
     onRecord: () => void;
     onSelectSwing: (id: string) => void;
     onUpload: () => void;
-}> = ({ onRecord, onSelectSwing, onUpload }) => {
+    onStartLiveSession?: () => void;
+    onStartPipeline?: (videoUrl: string, thumbUrl: string, club: string, angle: string) => void;
+}> = ({ onRecord, onSelectSwing, onUpload, onStartLiveSession, onStartPipeline }) => {
     const [isCapturing, setIsCapturing] = useState(false);
     const [filter, setFilter] = useState('ALL');
     const swings = db.getSwings();
@@ -555,14 +658,12 @@ export const AnalyzeView: React.FC<{
     const handleNewCapture = () => setIsCapturing(true);
 
     const handleCaptureComplete = (videoUrl: string, thumbUrl: string) => {
-        // In a real app, this would upload to server.
-        // Mock creating a new swing entry
         const newSwing: SwingAnalysis = {
             id: crypto.randomUUID(),
             date: new Date(),
             videoUrl: videoUrl,
             thumbnailUrl: thumbUrl,
-            clubUsed: 'DRIVER', // Default, user would select
+            clubUsed: 'DRIVER',
             tags: ['New Import'],
             metrics: {},
             feedback: [],
@@ -575,8 +676,21 @@ export const AnalyzeView: React.FC<{
         onSelectSwing(newSwing.id);
     };
 
+    const handlePipelineStart = (videoUrl: string, thumbUrl: string, club: string, angle: string) => {
+        setIsCapturing(false);
+        if (onStartPipeline) {
+            onStartPipeline(videoUrl, thumbUrl, club, angle);
+        }
+    };
+
     if (isCapturing) {
-        return <MediaCaptureWizard onComplete={handleCaptureComplete} onCancel={() => setIsCapturing(false)} />;
+        return (
+            <MediaCaptureWizard
+                onComplete={handleCaptureComplete}
+                onStartPipeline={onStartPipeline ? handlePipelineStart : undefined}
+                onCancel={() => setIsCapturing(false)}
+            />
+        );
     }
 
     const filteredSwings = swings.filter(s => {
@@ -602,12 +716,12 @@ export const AnalyzeView: React.FC<{
                 {/* Filters */}
                 <div className="flex gap-2 overflow-x-auto hide-scrollbar px-4">
                     {['ALL', 'DRIVER', 'IRONS', 'WEDGES'].map(f => (
-                         <button 
-                            key={f} 
+                         <button
+                            key={f}
                             onClick={() => setFilter(f)}
                             className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition-colors ${
-                                filter === f 
-                                    ? 'bg-gray-900 text-white border-gray-900' 
+                                filter === f
+                                    ? 'bg-gray-900 text-white border-gray-900'
                                     : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
                             }`}
                         >
@@ -617,11 +731,44 @@ export const AnalyzeView: React.FC<{
                 </div>
             </div>
 
+            {/* AI Analysis Quick Actions */}
+            <div className="px-4">
+                <div className="grid grid-cols-2 gap-3">
+                    {/* AI Analyze Card */}
+                    <div
+                        className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95"
+                        onClick={handleNewCapture}
+                    >
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mb-3">
+                            <Icons.Zap />
+                        </div>
+                        <Text variant="h4" color="white" className="text-sm font-bold mb-1">AI Analyze</Text>
+                        <Text className="text-[10px] text-orange-100">Full P1-P10 breakdown with coaching</Text>
+                    </div>
+
+                    {/* Live Session Card */}
+                    <div
+                        className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95"
+                        onClick={() => onStartLiveSession?.()}
+                    >
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mb-3">
+                            <Icons.Video />
+                        </div>
+                        <Text variant="h4" color="white" className="text-sm font-bold mb-1">Live Session</Text>
+                        <Text className="text-[10px] text-blue-100">Real-time capture & instant analysis</Text>
+                    </div>
+                </div>
+            </div>
+
             {/* Grid */}
             <div className="px-4">
+                <div className="flex justify-between items-center mb-3">
+                    <Text variant="h3" className="text-base">Recent Analyses</Text>
+                    <Text variant="caption" className="text-xs text-gray-400">{filteredSwings.length} swings</Text>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                     {/* Record New Card */}
-                    <div 
+                    <div
                         className="aspect-[3/4] rounded-2xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-gray-400 cursor-pointer transition-all active:scale-95 bg-gray-50/50 group"
                         onClick={handleNewCapture}
                     >
@@ -660,5 +807,11 @@ export const AnalyzeView: React.FC<{
         </div>
     );
 };
+
+export { SwingAnalysisPipeline } from './SwingAnalysisPipeline';
+export { PositionAnalysisView } from './PositionAnalysisView';
+export { EnhancedVideoPlayer } from './EnhancedVideoPlayer';
+export { AnalysisReportView } from './AnalysisReportView';
+export { LiveSessionView } from './LiveSessionView';
 
 export const VideoRecorder = MediaCaptureWizard; // Alias for compatibility

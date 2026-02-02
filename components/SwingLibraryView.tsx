@@ -341,7 +341,11 @@ const SwingAnalysisDetail: React.FC<{ video: SwingVideo; onBack: () => void }> =
     );
 };
 
-export const SwingLibrary: React.FC<{ onRecord: () => void }> = ({ onRecord }) => {
+export const SwingLibrary: React.FC<{
+    onRecord: () => void;
+    onStartPipeline?: (videoUrl: string, thumbUrl: string, club: string, angle: string) => void;
+    onStartLiveSession?: () => void;
+}> = ({ onRecord, onStartPipeline, onStartLiveSession }) => {
     const [viewMode, setViewMode] = useState<'LIBRARY' | 'DETAIL'>('LIBRARY');
     const [activeTab, setActiveTab] = useState<'VIDEOS' | 'FOLDERS' | 'COMPARE'>('VIDEOS');
     const [selectedVideo, setSelectedVideo] = useState<SwingVideo | null>(null);
@@ -380,6 +384,32 @@ export const SwingLibrary: React.FC<{ onRecord: () => void }> = ({ onRecord }) =
             />
 
             <div className="px-4">
+                {/* AI Quick Actions */}
+                {(onStartPipeline || onStartLiveSession) && (
+                    <div className="grid grid-cols-2 gap-3 mb-6">
+                        {onStartPipeline && (
+                            <button
+                                onClick={onRecord}
+                                className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-3 text-white text-left hover:shadow-lg transition-all active:scale-95"
+                            >
+                                <span className="text-lg block mb-1">🧠</span>
+                                <span className="text-xs font-bold block">AI Analyze</span>
+                                <span className="text-[9px] text-orange-100 block">P1-P10 breakdown</span>
+                            </button>
+                        )}
+                        {onStartLiveSession && (
+                            <button
+                                onClick={onStartLiveSession}
+                                className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-3 text-white text-left hover:shadow-lg transition-all active:scale-95"
+                            >
+                                <span className="text-lg block mb-1">📹</span>
+                                <span className="text-xs font-bold block">Live Session</span>
+                                <span className="text-[9px] text-blue-100 block">Real-time capture</span>
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {/* Tabs */}
                 <div className="flex border-b border-gray-200 mb-6">
                     {(['VIDEOS', 'FOLDERS', 'COMPARE'] as const).map((tab) => (
