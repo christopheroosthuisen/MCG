@@ -83,12 +83,83 @@ const calculatePlayability = (w: CurrentWeather): PlayabilityRating => {
     return 'EXCELLENT';
 };
 
+/**
+ * Calculate distance adjustments based on weather conditions.
+ *
+ * Temperature: ~0.18% per °F from 70°F baseline (Trackman research).
+ *   Example: 90°F → +3.6% distance increase.
+ *
+ * Altitude: ~2% per 1000ft above sea level.
+ *   Example: 5000ft → +10% distance.
+ *
+ * Humidity: Humid air is less dense (water vapor is lighter than N2/O2).
+ *   ~0.5% per 25% humidity above 50% baseline. Small but real.
+ *
+ * Wind: Headwind ~1% per mph, tailwind ~0.5% per mph.
+ *   Asymmetry because headwind increases spin → more drag.
+ */
 const getDistanceAdjustments = (w: CurrentWeather, altitude: number = 0) => {
-    const adjs = [];
+    const adjs: { label: string; val: number; unit: string; explanation: string }[] = [];
+
+    // Temperature: 0.18% per °F from 70°F
     const tempDiff = w.temperature - 70;
-    if (Math.abs(tempDiff) > 10) adjs.push({ label: 'Temp', val: Math.round(tempDiff * 0.15), unit: '%' });
-    if (altitude > 1000) adjs.push({ label: 'Altitude', val: Math.round((altitude/1000)*2), unit: '%' });
-    if (w.windSpeed > 10) adjs.push({ label: 'Wind', val: 0, unit: 'varies' });
+    if (Math.abs(tempDiff) >= 5) {
+        const pct = Math.round(tempDiff * 0.18);
+        adjs.push({
+            label: 'Temperature',
+            val: pct,
+            unit: '%',
+            explanation: `${w.temperature}°F is ${Math.abs(Math.round(tempDiff))}° ${tempDiff > 0 ? 'warmer' : 'cooler'} than 70°F baseline`
+        });
+    }
+
+    // Altitude: 2% per 1000ft
+    if (altitude > 500) {
+        const pct = Math.round((altitude / 1000) * 2);
+        adjs.push({
+            label: 'Altitude',
+            val: pct,
+            unit: '%',
+            explanation: `${altitude.toLocaleString()}ft elevation, thinner air`
+        });
+    }
+
+    // Humidity
+    if (w.humidity > 75) {
+        const pct = Math.round((w.humidity - 50) / 25 * 0.5);
+        if (pct > 0) {
+            adjs.push({
+                label: 'Humidity',
+                val: pct,
+                unit: '%',
+                explanation: `${w.humidity}% humidity — lighter air molecules`
+            });
+        }
+    }
+
+    // Wind (simplified directional)
+    if (w.windSpeed > 8) {
+        const dir = w.windDirection;
+        let windPct = 0;
+        let windLabel = '';
+        if (['N', 'NE', 'NW'].includes(dir)) {
+            windPct = -Math.round(w.windSpeed * (dir === 'N' ? 1.0 : 0.7));
+            windLabel = `${w.windSpeed}mph headwind`;
+        } else if (['S', 'SE', 'SW'].includes(dir)) {
+            windPct = Math.round(w.windSpeed * (dir === 'S' ? 0.5 : 0.35));
+            windLabel = `${w.windSpeed}mph tailwind`;
+        } else {
+            windPct = 0;
+            windLabel = `${w.windSpeed}mph crosswind (lateral effect)`;
+        }
+        adjs.push({
+            label: 'Wind',
+            val: windPct,
+            unit: windPct === 0 ? 'lateral' : '%',
+            explanation: windLabel
+        });
+    }
+
     return adjs;
 };
 
@@ -222,11 +293,14 @@ export const WeatherView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                             <div className="space-y-2">
                                 {adjustments.map((adj, i) => (
-                                    <div key={i} className="flex justify-between text-sm py-1 border-b border-gray-50 last:border-0">
-                                        <span className="text-gray-600">{adj.label}</span>
-                                        <span className={`font-bold ${adj.val > 0 ? 'text-green-600' : 'text-red-500'}`}>
-                                            {adj.val > 0 ? '+' : ''}{adj.val}{adj.unit}
-                                        </span>
+                                    <div key={i} className="py-2 border-b border-gray-50 last:border-0">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600 font-medium">{adj.label}</span>
+                                            <span className={`font-bold ${adj.val > 0 ? 'text-green-600' : adj.val < 0 ? 'text-red-500' : 'text-gray-500'}`}>
+                                                {adj.val > 0 ? '+' : ''}{adj.val}{adj.unit}
+                                            </span>
+                                        </div>
+                                        <p className="text-[10px] text-gray-400 mt-0.5">{adj.explanation}</p>
                                     </div>
                                 ))}
                             </div>

@@ -17,6 +17,29 @@ const Icons = {
 };
 
 // --- GOLF PHYSICS ENGINE ---
+// Implements the D-Plane ball flight model (Trackman verified)
+//
+// The D-Plane: Ball flight is determined by two factors:
+//   1. Club Face Angle at impact → determines ~75-85% of START direction
+//   2. Club Path → determines the CURVATURE (via face-to-path relationship)
+//
+// Key Ball Flight Laws (New Ball Flight Laws, verified by Trackman):
+//   - Start Direction: ~80% face angle + ~20% path (for irons)
+//   - Start Direction: ~75% face angle + ~25% path (for driver, lower loft)
+//   - Curvature: Face-to-Path difference → creates sidespin
+//   - Face > Path = fade/slice spin (for RH golfer, ball curves right)
+//   - Face < Path = draw/hook spin (for RH golfer, ball curves left)
+//
+// Smash Factor targets (Trackman data):
+//   Driver: 1.48-1.50 (max theoretical ~1.50)
+//   3-Wood: 1.44-1.46
+//   5-Iron: 1.38-1.40
+//   7-Iron: 1.33-1.35
+//   PW: 1.23-1.25
+//
+// Optimal launch conditions (Driver, 100mph club speed):
+//   Launch Angle: 12-15° | Spin: 2200-2700 rpm | AoA: +2° to +5°
+//
 class GolfPhysicsEngine {
     data: SwingMetrics;
     hand: 'Right' | 'Left';
@@ -31,46 +54,115 @@ class GolfPhysicsEngine {
     analyzeFlightLaws() {
         const path = this.data.path || 0;
         const face = this.data.faceAngle || 0;
-        
-        // Adjust for Dexterity
+
+        // Adjust signs for left-handed golfers
         const calcPath = this.hand === 'Right' ? path : -path;
         const calcFace = this.hand === 'Right' ? face : -face;
 
-        // 1. Calculate Face-to-Path (The metric that dictates curve)
+        // Face-to-Path: The primary curvature metric
+        // Positive FTP = open face relative to path = fade/slice spin
+        // Negative FTP = closed face relative to path = draw/hook spin
         const faceToPath = calcFace - calcPath;
-        
-        // 2. Determine Start Direction
+
+        // Start direction (New Ball Flight Laws):
+        // For driver (~75% face, ~25% path):
+        // For irons (~80% face, ~20% path):
+        const cs = this.data.clubSpeed || 100;
+        const faceInfluence = cs > 90 ? 0.75 : 0.80; // Driver vs iron
+        const startAngle = calcFace * faceInfluence + calcPath * (1 - faceInfluence);
+
         let startDir = "Straight";
-        if (Math.abs(calcFace) < 1.0) startDir = "Straight";
-        else if (calcFace > 0) startDir = "Right";
-        else startDir = "Left";
+        if (Math.abs(startAngle) < 1.0) startDir = "Straight";
+        else if (startAngle > 0) startDir = this.hand === 'Right' ? "Right" : "Left";
+        else startDir = this.hand === 'Right' ? "Left" : "Right";
 
-        // 3. Determine Curvature
+        // Curvature classification
         let curveType = "Straight";
-        if (Math.abs(faceToPath) < 1.5) curveType = "Straight";
-        else if (faceToPath > 0) curveType = this.hand === 'Right' ? "Fade/Slice (Curves Right)" : "Fade/Slice (Curves Left)";
-        else curveType = this.hand === 'Right' ? "Draw/Hook (Curves Left)" : "Draw/Hook (Curves Right)";
+        let shotShape = "Straight";
+        if (Math.abs(faceToPath) < 1.5) {
+            curveType = "Straight";
+            shotShape = "Straight";
+        } else if (faceToPath > 0 && faceToPath <= 3.0) {
+            curveType = "Fade";
+            shotShape = "Fade";
+            this.praise.push(`Controlled Fade: Face-to-Path of +${faceToPath.toFixed(1)}° produces a reliable left-to-right shape.`);
+        } else if (faceToPath > 3.0) {
+            curveType = "Slice";
+            shotShape = "Slice";
+        } else if (faceToPath < 0 && faceToPath >= -3.0) {
+            curveType = "Draw";
+            shotShape = "Draw";
+            this.praise.push(`Controlled Draw: Face-to-Path of ${faceToPath.toFixed(1)}° produces a power draw.`);
+        } else if (faceToPath < -3.0) {
+            curveType = "Hook";
+            shotShape = "Hook";
+        }
 
-        // 4. Diagnosis
-        const diagnosisText = `Ball started ${startDir} and hit a ${curveType}.`;
-        
-        // SLICE LOGIC
-        if (faceToPath > 2.0) {
-            if (calcPath < -2.0) { // Out-to-In
-                this.issues.push(`Slice Cause (Over-the-Top): You swung ${Math.abs(path)}° ${this.hand === 'Right' ? 'Left' : 'Right'} across the ball with an Open Face.`);
-            } else { // Push Slice
-                this.issues.push(`Push-Slice Cause: Your path was okay, but your Face was wide open (${face}°). Likely a grip issue or cupped wrist.`);
+        const curveDir = this.hand === 'Right'
+            ? (faceToPath > 0 ? "Curves Right" : "Curves Left")
+            : (faceToPath > 0 ? "Curves Left" : "Curves Right");
+
+        const diagnosisText = `Ball started ${startDir} (${Math.abs(startAngle).toFixed(1)}°) with a ${curveType} (${curveDir}).`;
+
+        // --- SLICE DIAGNOSIS ---
+        if (faceToPath > 3.0) {
+            if (calcPath < -2.0) {
+                // Classic over-the-top slice
+                this.issues.push(
+                    `Slice Cause — Over-the-Top: Path is ${Math.abs(path).toFixed(1)}° out-to-in with face ${face.toFixed(1)}° open. ` +
+                    `The ${Math.abs(faceToPath).toFixed(1)}° face-to-path gap creates heavy slice spin. ` +
+                    `Fix: Feel the club dropping inside on the downswing. Practice the "headcover under trail arm" drill.`
+                );
+            } else if (calcPath >= -2.0 && calcPath <= 2.0) {
+                // Push-slice: path is okay but face is wide open
+                this.issues.push(
+                    `Push-Slice Cause — Open Face: Path is neutral (${path.toFixed(1)}°) but face is ${face.toFixed(1)}° open. ` +
+                    `Likely cause: weak grip, cupped lead wrist at impact, or poor forearm rotation. ` +
+                    `Fix: Strengthen grip by rotating both hands clockwise (RH golfer). Check for bowed lead wrist at P6.`
+                );
+            } else {
+                // In-to-out with open face = push slice (rare)
+                this.issues.push(
+                    `Push-Slice: In-to-out path (${path.toFixed(1)}°) with wide-open face (${face.toFixed(1)}°). ` +
+                    `This combination pushes the ball right and curves further right. Close the face or reduce path.`
+                );
             }
         }
 
-        // HOOK LOGIC
-        if (faceToPath < -2.0) {
-            if (calcPath > 2.0) { // In-to-Out
-                this.issues.push(`Hook Cause (Stuck): You swung ${Math.abs(path)}° ${this.hand === 'Right' ? 'Right' : 'Left'} (In-to-Out) but flipped your hands, closing the face.`);
+        // --- HOOK DIAGNOSIS ---
+        if (faceToPath < -3.0) {
+            if (calcPath > 2.0) {
+                // Stuck hook: in-to-out with flip
+                this.issues.push(
+                    `Hook Cause — Stuck/Flip: Path is ${Math.abs(path).toFixed(1)}° in-to-out but hands flipped, ` +
+                    `closing face to ${face.toFixed(1)}°. The ${Math.abs(faceToPath).toFixed(1)}° face-to-path gap creates strong hook spin. ` +
+                    `Fix: Feel the body rotating through impact instead of the hands flipping. Keep chest turning to target.`
+                );
+            } else if (calcPath >= -2.0 && calcPath <= 2.0) {
+                // Pull-hook: neutral path, closed face
+                this.issues.push(
+                    `Pull-Hook Cause — Closed Face: Path is neutral but face is ${face.toFixed(1)}° closed. ` +
+                    `Likely cause: strong grip, excessive forearm rotation, or early release. ` +
+                    `Fix: Weaken grip slightly. Feel the logo on your glove pointing skyward at impact.`
+                );
+            } else {
+                // Out-to-in with closed face = pull hook
+                this.issues.push(
+                    `Pull-Hook: Out-to-in path (${path.toFixed(1)}°) with closed face (${face.toFixed(1)}°). ` +
+                    `Ball starts left and hooks further left. Reduce grip pressure and rotate body through.`
+                );
             }
         }
-        
-        return { diagnosisText, faceToPath };
+
+        // --- STRAIGHT SHOT PRAISE ---
+        if (Math.abs(faceToPath) < 1.5 && Math.abs(startAngle) < 2.0) {
+            this.praise.push(
+                `Excellent accuracy: Face-to-Path of ${faceToPath.toFixed(1)}° with ${startAngle.toFixed(1)}° start direction — ` +
+                `this is tour-caliber directional control.`
+            );
+        }
+
+        return { diagnosisText, faceToPath, startAngle, shotShape };
     }
 
     analyzeEfficiency() {
@@ -79,30 +171,149 @@ class GolfPhysicsEngine {
         const bs = this.data.ballSpeed || 0;
         const spin = this.data.spinRate || 0;
         const aoa = this.data.attackAngle || 0;
+        const la = this.data.launchAngle || 0;
 
+        // Calculate smash factor if not provided
         if (smash === 0 && cs > 0) {
             smash = bs / cs;
         }
 
-        // 1. Smash Factor Check
-        if (smash >= 1.48) {
-            this.praise.push(`Elite Ball Striking: Smash Factor of ${smash.toFixed(2)} means a perfect center strike.`);
-        } else if (smash < 1.43 && cs > 90) {
-            this.issues.push(`Low Efficiency (${smash.toFixed(2)}): You are losing ball speed. Likely hitting Heel or Toe.`);
+        // --- SMASH FACTOR ANALYSIS ---
+        // Smash factor is the ratio of ball speed to club speed.
+        // It measures strike quality (center contact).
+        // Max theoretical for driver: ~1.50 (COR limit of 0.83)
+        if (cs > 90) {
+            // Driver range
+            if (smash >= 1.48) {
+                this.praise.push(
+                    `Elite Ball Striking: Smash Factor ${smash.toFixed(2)} — near maximum efficiency. ` +
+                    `This means center-face contact. Tour average is 1.49.`
+                );
+            } else if (smash >= 1.44) {
+                this.praise.push(
+                    `Good Efficiency: Smash Factor ${smash.toFixed(2)} — slightly off-center but still solid. ` +
+                    `You're losing ~${Math.round((1.48 - smash) * cs)} mph of ball speed vs perfect contact.`
+                );
+            } else if (smash < 1.40) {
+                const lostBallSpeed = Math.round((1.48 - smash) * cs);
+                const lostCarry = Math.round(lostBallSpeed * 2.5); // ~2.5y per mph ball speed
+                this.issues.push(
+                    `Low Efficiency (${smash.toFixed(2)}): Missing the sweet spot costs you ~${lostBallSpeed} mph ball speed ` +
+                    `and ~${lostCarry} yards of carry. Check impact tape to identify heel/toe/high/low pattern.`
+                );
+            }
+        } else {
+            // Iron range
+            const ironTarget = cs > 80 ? 1.38 : cs > 70 ? 1.33 : 1.25;
+            if (smash >= ironTarget) {
+                this.praise.push(`Solid Iron Contact: Smash ${smash.toFixed(2)} is on target for this club speed.`);
+            } else if (smash < ironTarget - 0.05) {
+                this.issues.push(
+                    `Thin/Thick Contact (Smash ${smash.toFixed(2)}): Below optimal ${ironTarget.toFixed(2)} for this club. ` +
+                    `Check ball position and maintain posture through impact.`
+                );
+            }
         }
 
-        // 2. Spin/Launch Optimization
-        if (cs > 85) { // Driver speeds
-            if (spin > 3200) {
-                let msg = `High Spin (${spin} rpm): This kills distance.`;
-                if (aoa < 0) {
-                    msg += " Cause: Hitting Down (Negative Attack Angle) on a driver creates excess spin.";
+        // --- SPIN & LAUNCH OPTIMIZATION (Driver) ---
+        if (cs > 85) {
+            // Optimal driver spin ranges by club speed (Trackman data):
+            // 90-95 mph: 2700-3200 rpm, 13-16° launch
+            // 95-105 mph: 2200-2700 rpm, 12-15° launch
+            // 105-115 mph: 1800-2400 rpm, 10-13° launch
+            // 115+ mph: 1700-2200 rpm, 9-12° launch
+            let optSpinLow: number, optSpinHigh: number;
+            let optLaunchLow: number, optLaunchHigh: number;
+
+            if (cs <= 95) {
+                optSpinLow = 2700; optSpinHigh = 3200;
+                optLaunchLow = 13; optLaunchHigh = 16;
+            } else if (cs <= 105) {
+                optSpinLow = 2200; optSpinHigh = 2700;
+                optLaunchLow = 12; optLaunchHigh = 15;
+            } else if (cs <= 115) {
+                optSpinLow = 1800; optSpinHigh = 2400;
+                optLaunchLow = 10; optLaunchHigh = 13;
+            } else {
+                optSpinLow = 1700; optSpinHigh = 2200;
+                optLaunchLow = 9; optLaunchHigh = 12;
+            }
+
+            // Spin analysis
+            if (spin > optSpinHigh + 500) {
+                let msg = `High Spin (${spin} rpm, optimal: ${optSpinLow}-${optSpinHigh}): `;
+                const excessSpin = spin - optSpinHigh;
+                const distLoss = Math.round(excessSpin / 200); // ~1y per 200rpm excess
+                msg += `Costing ~${distLoss} yards of carry. `;
+
+                if (aoa < -2) {
+                    msg += `Primary cause: Steep Attack Angle (${aoa.toFixed(1)}°). ` +
+                        `Hitting down on the driver adds loft at impact, creating backspin. ` +
+                        `Fix: Tee ball higher, move ball forward in stance, feel like you're hitting "up" through impact.`;
+                } else if (smash < 1.44) {
+                    msg += `Likely cause: Low-face strike (gear effect). Impact below center adds spin. ` +
+                        `Fix: Tee ball higher. The "high-toe" area produces optimal spin.`;
                 } else {
-                    msg += " Cause: Strike was likely low on the face (Gear Effect).";
+                    msg += `Your attack angle and strike are decent — consider a lower-spin shaft or head.`;
                 }
                 this.issues.push(msg);
-            } else if (spin < 1800 && spin > 0) {
-                this.issues.push("Low Spin: Careful, the ball might drop out of the sky too fast.");
+            } else if (spin < optSpinLow && spin > 0) {
+                this.issues.push(
+                    `Low Spin (${spin} rpm, optimal: ${optSpinLow}-${optSpinHigh}): ` +
+                    `Ball may drop out of the sky and lose carry. ` +
+                    `If distance is fine, low spin can be good for roll. ` +
+                    `If ballooning, the launch angle (${la.toFixed(1)}°) may be too high for this spin rate.`
+                );
+            } else if (spin >= optSpinLow && spin <= optSpinHigh) {
+                this.praise.push(
+                    `Optimal Spin: ${spin} rpm is in the ideal ${optSpinLow}-${optSpinHigh} range for ${cs.toFixed(0)} mph club speed.`
+                );
+            }
+
+            // Launch angle analysis
+            if (la > 0 && (la < optLaunchLow - 2 || la > optLaunchHigh + 2)) {
+                if (la < optLaunchLow - 2) {
+                    this.issues.push(
+                        `Low Launch (${la.toFixed(1)}°, optimal: ${optLaunchLow}-${optLaunchHigh}°): ` +
+                        `Ball isn't getting enough height to maximize carry. ` +
+                        `${aoa < 0 ? 'Negative attack angle contributes to low launch.' : 'Consider higher loft or forward ball position.'}`
+                    );
+                } else {
+                    this.issues.push(
+                        `High Launch (${la.toFixed(1)}°, optimal: ${optLaunchLow}-${optLaunchHigh}°): ` +
+                        `${spin > optSpinHigh ? 'Combined with high spin, this creates a "balloon" ball flight.' : 'May be losing distance to excessive height.'}`
+                    );
+                }
+            } else if (la >= optLaunchLow && la <= optLaunchHigh) {
+                this.praise.push(`Optimal Launch: ${la.toFixed(1)}° is ideal for ${cs.toFixed(0)} mph club speed.`);
+            }
+
+            // Attack angle analysis (Driver specific)
+            if (aoa < -3) {
+                this.issues.push(
+                    `Steep Attack Angle (${aoa.toFixed(1)}°): You're hitting DOWN on the driver. ` +
+                    `Tour average is +1° to +3° UP. Each degree of negative AoA costs ~4-5 yards. ` +
+                    `You're losing ~${Math.round(Math.abs(aoa + 1) * 4.5)} yards vs optimal.`
+                );
+            } else if (aoa >= 1 && aoa <= 5) {
+                this.praise.push(
+                    `Good Attack Angle: ${aoa.toFixed(1)}° up — optimal for maximizing driver distance and launch.`
+                );
+            }
+        }
+
+        // --- ESTIMATED CARRY DISTANCE ---
+        if (bs > 0 && la > 0 && spin > 0) {
+            // Simplified carry distance estimation using Trackman regression:
+            // Carry ≈ ballSpeed * launchFactor * spinFactor
+            // This is a rough approximation, actual carry depends on many more factors
+            const launchRad = la * Math.PI / 180;
+            const hangTime = (2 * bs * Math.sin(launchRad)) / 32.174; // simplified projectile
+            const carry = bs * Math.cos(launchRad) * hangTime * 0.85; // drag factor ~0.85
+            if (carry > 0) {
+                this.praise.push(
+                    `Estimated Carry: ~${Math.round(carry / 3)} yards (${bs.toFixed(0)} mph ball speed, ${la.toFixed(1)}° launch).`
+                );
             }
         }
 

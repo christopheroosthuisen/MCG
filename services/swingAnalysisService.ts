@@ -938,7 +938,27 @@ export function calculateAngleBetweenJoints(
 }
 
 /**
- * Grade a position based on its angles and coaching feedback
+ * Grade a position based on its angles and coaching feedback.
+ *
+ * Grading uses a weighted score where:
+ *   EXCELLENT (within 3° of ideal center): 4 points
+ *   GOOD (within ideal range): 3 points
+ *   NEEDS_WORK (5-15° outside ideal): 1 point
+ *   CRITICAL (>15° outside ideal): 0 points
+ *
+ * Score = sum(points) / (total * 4)
+ *
+ * Critical angles or feedback can cap the maximum grade.
+ * Feedback severity is also weighted:
+ *   CRITICAL feedback: -0.15 per instance (serious mechanical flaw)
+ *   WARNING feedback: -0.05 per instance (minor issue)
+ *
+ * Grade thresholds:
+ *   A: >= 0.85 (Tour-caliber position)
+ *   B: >= 0.70 (Solid fundamentals)
+ *   C: >= 0.50 (Average, room for improvement)
+ *   D: >= 0.30 (Significant issues)
+ *   F: < 0.30 (Needs major correction)
  */
 export function gradePosition(
     angles: MeasuredAngle[],
@@ -948,17 +968,38 @@ export function gradePosition(
 
     const excellentCount = angles.filter(a => a.status === 'EXCELLENT').length;
     const goodCount = angles.filter(a => a.status === 'GOOD').length;
+    const needsWorkCount = angles.filter(a => a.status === 'NEEDS_WORK').length;
     const criticalCount = angles.filter(a => a.status === 'CRITICAL').length;
+
     const criticalFeedback = coaching.filter(c => c.severity === 'CRITICAL').length;
+    const warningFeedback = coaching.filter(c => c.severity === 'WARNING').length;
 
     const total = angles.length;
-    const score = (excellentCount * 4 + goodCount * 3) / (total * 4);
 
-    if (criticalCount > 0 || criticalFeedback > 1) return score > 0.5 ? 'D' : 'F';
-    if (score >= 0.85) return 'A';
-    if (score >= 0.7) return 'B';
-    if (score >= 0.5) return 'C';
-    return 'D';
+    // Weighted angle score (0 to 1)
+    const angleScore = (excellentCount * 4 + goodCount * 3 + needsWorkCount * 1 + criticalCount * 0) / (total * 4);
+
+    // Feedback penalty (coaching issues reduce score)
+    const feedbackPenalty = criticalFeedback * 0.15 + warningFeedback * 0.05;
+
+    // Combined score
+    const finalScore = Math.max(0, angleScore - feedbackPenalty);
+
+    // Cap grade if critical angles exist
+    if (criticalCount >= 2 || criticalFeedback >= 2) {
+        // Multiple critical issues: cap at D
+        return finalScore > 0.5 ? 'D' : 'F';
+    }
+    if (criticalCount === 1 || criticalFeedback === 1) {
+        // Single critical: cap at C
+        if (finalScore >= 0.7) return 'C';
+    }
+
+    if (finalScore >= 0.85) return 'A';
+    if (finalScore >= 0.70) return 'B';
+    if (finalScore >= 0.50) return 'C';
+    if (finalScore >= 0.30) return 'D';
+    return 'F';
 }
 
 // ============================================================
